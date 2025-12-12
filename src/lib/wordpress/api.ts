@@ -46,6 +46,11 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
     return requestCache.get(cacheKey);
   }
 
+  if (!API_URL) {
+    console.error('Error: WordPress API URL is not defined. Please set NEXT_PUBLIC_WORDPRESS_API_URL environment variable.');
+    throw new Error('WordPress API URL is not defined');
+  }
+
   const url = new URL(`${API_URL}${endpoint}`);
   
   // Add query parameters
@@ -662,6 +667,12 @@ export async function searchToursAdvanced(options: {
   } = options;
 
   const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+  
+  if (!apiUrl) {
+    console.error('Error: WordPress API URL is not defined in searchToursAdvanced');
+    throw new Error('WordPress API URL is not defined');
+  }
+
   const url = new URL(`${apiUrl}/tour`);
 
   // Build query parameters

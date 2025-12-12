@@ -9,10 +9,15 @@ interface PostPageProps {
 }
 
 export async function generateStaticParams() {
-  const posts = await getPosts({ per_page: 100 });
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
+  try {
+    const posts = await getPosts({ per_page: 100 });
+    return posts.map((post) => ({
+      slug: post.slug,
+    }));
+  } catch (error) {
+    console.error('Error generating static params for posts:', error);
+    return [];
+  }
 }
 
 export default async function PostPage({ params }: PostPageProps) {
