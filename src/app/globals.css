@@ -1,26 +1,111 @@
+/* Icon Fonts */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+@import url('https://cdn.jsdelivr.net/npm/eleganticons@0.0.1/css/eleganticons.min.css');
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer utilities {
+  .font-kaushan {
+    font-family: var(--font-kaushan-script), cursive;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Standardized container: 1200px max-width, 22px horizontal padding */
+  .container-qualitour {
+    @apply max-w-[1200px] mx-auto px-[22px];
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  /* Embla Carousel Slide Gaps */
+  .embla__slide {
+    flex: 0 0 calc(33.3333% - 0.75rem); /* Show 3 slides minus the gap */
+    margin-right: 1.5rem; /* 24px - consistent with gap-6 */
+    padding-top: 0.5rem; /* 8px - for shadow spacing */
+    padding-bottom: 0.5rem; /* 8px - for shadow spacing */
+  }
+
+  body {
+    background-color: #ffffff;
+  }
+
+  /* Basic typography styles for content areas */
+  .prose p {
+    margin-bottom: 1rem;
+    line-height: 1.75;
+    color: #282828;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+    line-height: 1.75;
+    color: #282828;
+  }
+
+  .prose ul li {
+    list-style-type: disc;
+  }
+
+  .prose ol li {
+    list-style-type: decimal;
+  }
+
+  /* Nested lists */
+  .prose ul ul,
+  .prose ol ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose ul ul li,
+  .prose ol ul li {
+    list-style-type: circle;
+  }
+
+  .prose strong {
+    font-weight: 600;
+    color: #383838;
+  }
+
+  .prose em {
+    font-style: italic;
+  }
+
+  .prose a {
+    color: #f7941e;
+    text-decoration: underline;
+  }
+
+  .prose a:hover {
+    color: #d67a1a;
+  }
+
+  /* Image carousel scrolling */
+  .image-carousel .overflow-x-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .image-carousel .overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .image-carousel .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .image-carousel .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+  }
+
+  .image-carousel .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
 }

@@ -1,0 +1,3 @@
+// Export all WordPress API functions and types
+export * from './api';
+export * from './types';
