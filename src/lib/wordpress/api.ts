@@ -1117,6 +1117,7 @@ export function getDurationTypeInfo(slug: string): {
  * Reviews are fetched from the custom WordPress REST endpoint
  * @returns All available Google reviews (45+)
  */
+// Fetch reviews from WordPress
 export async function getGoogleReviews(): Promise<GoogleReview[]> {
   const apiUrl = getApiUrl();
   if (!apiUrl) {
