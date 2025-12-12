@@ -1116,7 +1116,9 @@ export function getDurationTypeInfo(slug: string): {
  * Get all Google reviews synced from SerpAPI
  * Reviews are fetched from the custom WordPress REST endpoint
  * @returns All available Google reviews (45+)
- *const apiUrl = getApiUrl();
+ */
+export async function getGoogleReviews(): Promise<GoogleReview[]> {
+  const apiUrl = getApiUrl();
   if (!apiUrl) {
     console.warn('[Reviews] API URL not configured');
     return [];
@@ -1124,9 +1126,7 @@ export function getDurationTypeInfo(slug: string): {
 
   try {
     // Get base URL (remove /wp-json/wp/v2 from API_URL)
-    const baseUrl = apiUrl
-    // Get base URL (remove /wp-json/wp/v2 from API_URL)
-    const baseUrl = API_URL.replace('/wp-json/wp/v2', '');
+    const baseUrl = apiUrl.replace('/wp-json/wp/v2', '');
     const url = new URL(`${baseUrl}/wp-json/qualitour/v1/google-reviews`);
     
     // Handle Basic Auth for Local Live Link
