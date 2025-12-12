@@ -1,6 +1,9 @@
 import { WPPost, WPPage, WPCategory, WPTag, WPMedia, WPApiParams, WPTour, WPTourCategory, WPTourTag, WPTourActivity, WPTourDestination, GoogleReview, PlaceDetails } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+// Helper to get API URL dynamically
+function getApiUrl() {
+  return process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+}
 
 /**
  * Request-level cache to prevent duplicate API calls during single render
@@ -46,12 +49,14 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
     return requestCache.get(cacheKey);
   }
 
-  if (!API_URL) {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) {
     console.error('Error: WordPress API URL is not defined. Please set NEXT_PUBLIC_WORDPRESS_API_URL environment variable.');
+    console.error('Available environment variables:', Object.keys(process.env).join(', '));
     throw new Error('WordPress API URL is not defined');
   }
 
-  const url = new URL(`${API_URL}${endpoint}`);
+  const url = new URL(`${apiUrl}${endpoint}`);
   
   // Add query parameters
   Object.entries(params).forEach(([key, value]) => {
@@ -666,10 +671,11 @@ export async function searchToursAdvanced(options: {
     lang,
   } = options;
 
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+  const apiUrl = getApiUrl();
   
   if (!apiUrl) {
     console.error('Error: WordPress API URL is not defined in searchToursAdvanced');
+    console.error('Available environment variables:', Object.keys(process.env).join(', '));
     throw new Error('WordPress API URL is not defined');
   }
 
@@ -1110,14 +1116,15 @@ export function getDurationTypeInfo(slug: string): {
  * Get all Google reviews synced from SerpAPI
  * Reviews are fetched from the custom WordPress REST endpoint
  * @returns All available Google reviews (45+)
- */
-export async function getGoogleReviews(): Promise<GoogleReview[]> {
-  if (!API_URL) {
+ *const apiUrl = getApiUrl();
+  if (!apiUrl) {
     console.warn('[Reviews] API URL not configured');
     return [];
   }
 
   try {
+    // Get base URL (remove /wp-json/wp/v2 from API_URL)
+    const baseUrl = apiUrl
     // Get base URL (remove /wp-json/wp/v2 from API_URL)
     const baseUrl = API_URL.replace('/wp-json/wp/v2', '');
     const url = new URL(`${baseUrl}/wp-json/qualitour/v1/google-reviews`);
