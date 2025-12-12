@@ -2,10 +2,6 @@ import { WPPost, WPPage, WPCategory, WPTag, WPMedia, WPApiParams, WPTour, WPTour
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
 
-if (!API_URL) {
-  throw new Error('WordPress API URL is not defined in environment variables');
-}
-
 /**
  * Request-level cache to prevent duplicate API calls during single render
  * Gets cleared between requests in production
