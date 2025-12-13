@@ -7,9 +7,36 @@ function getApiUrl() {
 
 /**
  * Request-level cache to prevent duplicate API calls during single render
- * Gets cleared between requests in production
+ * NOTE: In Edge/Worker runtimes, module scope can persist across requests.
+ * Keep this cache bounded + short-lived to avoid memory growth (Cloudflare 1102).
  */
-const requestCache = new Map<string, Promise<any>>();
+type RequestCacheEntry = {
+  createdAt: number;
+  promise: Promise<any>;
+};
+
+const requestCache = new Map<string, RequestCacheEntry>();
+const REQUEST_CACHE_MAX_ENTRIES = 200;
+const REQUEST_CACHE_TTL_MS = 15_000;
+
+function pruneRequestCache(now: number) {
+  // Drop expired entries first.
+  for (const [key, entry] of requestCache) {
+    if (now - entry.createdAt > REQUEST_CACHE_TTL_MS) {
+      requestCache.delete(key);
+    }
+  }
+
+  // If still too large, remove oldest entries.
+  if (requestCache.size <= REQUEST_CACHE_MAX_ENTRIES) return;
+
+  const entries = Array.from(requestCache.entries());
+  entries.sort((a, b) => a[1].createdAt - b[1].createdAt);
+  const overflow = requestCache.size - REQUEST_CACHE_MAX_ENTRIES;
+  for (let i = 0; i < overflow; i++) {
+    requestCache.delete(entries[i]![0]);
+  }
+}
 
 function getCacheKey(endpoint: string, params: WPApiParams): string {
   const sortedParams = Object.keys(params)
@@ -56,8 +83,11 @@ function getRevalidateTime(endpoint: string): number | false {
 async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: RequestInit = {}) {
   // Check request-level cache first
   const cacheKey = getCacheKey(endpoint, params);
-  if (requestCache.has(cacheKey)) {
-    return requestCache.get(cacheKey);
+  const now = Date.now();
+  pruneRequestCache(now);
+  const cached = requestCache.get(cacheKey);
+  if (cached && now - cached.createdAt <= REQUEST_CACHE_TTL_MS) {
+    return cached.promise;
   }
 
   const apiUrl = getApiUrl();
@@ -107,6 +137,14 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
 
     const revalidateTime = getRevalidateTime(endpoint);
 
+    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+    const controller = !options.signal && Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
+    const timeoutId = controller
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
     const response = await fetch(urlObj.toString(), {
       // Smart ISR revalidation based on endpoint type
       // If revalidateTime is false, use force-cache (Static)
@@ -116,12 +154,15 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
         : { next: { revalidate: revalidateTime } }
       ),
       ...options,
+      signal: options.signal ?? controller?.signal,
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
         ...authHeader,
         ...options.headers,
       },
+    }).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId);
     });
 
     if (process.env.NODE_ENV === 'development' && startTime) {
@@ -144,8 +185,13 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
     return response.json();
   })();
 
-  // Store in request cache
-  requestCache.set(cacheKey, promise);
+  // Store promise in cache (bounded/TTL)
+  requestCache.set(cacheKey, { createdAt: now, promise });
+
+  // If this request fails, drop it so future calls can retry.
+  promise.catch(() => {
+    requestCache.delete(cacheKey);
+  });
   
   return promise;
 }
@@ -1241,8 +1287,6 @@ function extractTourDays(tour: WPTour): number {
       return days;
     }
   }
-
-  // Try parsing from duration_text
   if (tour.tour_meta?.duration_text) {
     const match = tour.tour_meta.duration_text.match(/(\d+)\s*Days?/i);
     if (match) {
