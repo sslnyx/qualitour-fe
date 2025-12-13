@@ -2,6 +2,8 @@ import { type Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 import Link from 'next/link';
 
+export const dynamic = 'force-static';
+
 export async function generateStaticParams() {
   return i18n.locales.map((locale) => ({ lang: locale }));
 }
