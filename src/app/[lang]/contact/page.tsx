@@ -3,6 +3,8 @@ import Container from '@/components/ui/Container';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'Contact Us | Qualitour',
   description: 'Get in touch with Qualitour. Contact us by phone, email, or visit our office in Vancouver.',

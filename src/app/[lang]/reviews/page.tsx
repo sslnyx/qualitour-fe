@@ -1,5 +1,7 @@
 import TestGoogleReviews from '@/components/TestGoogleReviews';
 
+export const dynamic = 'force-static';
+
 export const metadata = {
   title: 'Google Reviews - Qualitour',
   description: 'Read reviews from our happy customers on Google',

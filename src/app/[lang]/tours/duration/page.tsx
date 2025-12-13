@@ -1,6 +1,8 @@
 import { type Locale } from '@/i18n/config';
 import Link from 'next/link';
 
+export const dynamic = 'force-static';
+
 interface Props {
   params: Promise<{ lang: Locale }>;
 }

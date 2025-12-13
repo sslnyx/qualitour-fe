@@ -6,6 +6,8 @@ import { getLocaleFromPathname, type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { headers } from 'next/headers';
 
+export const runtime = 'edge';
+
 export const metadata = {
   title: 'Tours | Qualitour',
   description: 'Browse our collection of amazing tours',
