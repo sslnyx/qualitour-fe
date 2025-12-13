@@ -1,7 +1,5 @@
 import TestGoogleReviews from '@/components/TestGoogleReviews';
 
-export const runtime = 'edge';
-
 export const metadata = {
   title: 'Google Reviews - Qualitour',
   description: 'Read reviews from our happy customers on Google',

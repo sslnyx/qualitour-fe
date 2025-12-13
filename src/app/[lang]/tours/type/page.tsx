@@ -1,8 +1,6 @@
 import { type Locale } from '@/i18n/config';
 import Link from 'next/link';
 
-export const runtime = 'edge';
-
 interface Props {
   params: Promise<{ lang: Locale }>;
 }

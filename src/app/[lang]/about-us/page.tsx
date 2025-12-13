@@ -5,8 +5,6 @@ import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import TourReviews from '@/components/TourReviews';
 
-export const runtime = 'edge';
-
 export const metadata: Metadata = {
   title: 'About Us | Qualitour',
   description: 'Learn about Qualitour, a Vancouver-based tour operator offering authentic Canadian tours, private transfers, and customizable travel experiences.',

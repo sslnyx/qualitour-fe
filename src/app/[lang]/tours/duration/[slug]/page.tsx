@@ -3,8 +3,6 @@ import { TourCard } from '@/components/TourCard';
 import { type Locale } from '@/i18n/config';
 import { notFound } from 'next/navigation';
 
-export const runtime = 'edge';
-
 interface Props {
   params: Promise<{ lang: Locale; slug: string }>;
   searchParams: Promise<{ page?: string }>;

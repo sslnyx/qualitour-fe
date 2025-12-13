@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   images: {
@@ -32,8 +35,8 @@ const nextConfig: NextConfig = {
         hostname: 'lh6.googleusercontent.com',
       },
     ],
-    // Disable image optimization in development for local WordPress
-    unoptimized: process.env.NODE_ENV === 'development',
+    // Disable Next.js image optimization (avoids requiring Cloudflare Images binding)
+    unoptimized: true,
   },
 };
 

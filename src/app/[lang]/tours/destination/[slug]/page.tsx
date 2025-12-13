@@ -4,8 +4,6 @@ import { type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 import Link from 'next/link';
 
-export const runtime = 'edge';
-
 interface Props {
   params: Promise<{ lang: Locale; slug: string }>;
   searchParams: Promise<{ page?: string }>;

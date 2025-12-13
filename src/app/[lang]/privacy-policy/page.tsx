@@ -4,8 +4,6 @@ import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 
-export const runtime = 'edge';
-
 export const metadata: Metadata = {
   title: 'Privacy Policy | Qualitour',
   description: 'Qualitour Privacy Policy - Learn how we collect, use, and protect your personal information.',

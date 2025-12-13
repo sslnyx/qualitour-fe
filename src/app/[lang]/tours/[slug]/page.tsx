@@ -7,8 +7,6 @@ import TourReviews from '@/components/TourReviews';
 import type { Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 
-export const runtime = 'edge';
-
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale; slug: string }> }) {
   try {
     const { slug, lang } = await params;

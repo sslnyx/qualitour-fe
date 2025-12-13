@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 
-export const runtime = 'edge';
-
 export const metadata = {
   title: 'Tours | Qualitour',
   description: 'Browse our collection of amazing tours',
