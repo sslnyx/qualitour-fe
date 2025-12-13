@@ -1157,9 +1157,17 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
     
     // Handle Basic Auth for Local Live Link
     let authHeader = {};
-    if (url.username && url.password) {
-      const credentials = Buffer.from(`${url.username}:${url.password}`).toString('base64');
-      authHeader = { 'Authorization': `Basic ${credentials}` };
+    let username = url.username;
+    let password = url.password;
+
+    if (!username || !password) {
+      username = process.env.WORDPRESS_AUTH_USER || '';
+      password = process.env.WORDPRESS_AUTH_PASS || '';
+    }
+
+    if (username && password) {
+      const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+      authHeader = { Authorization: `Basic ${credentials}` };
       url.username = '';
       url.password = '';
     }
@@ -1167,7 +1175,7 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
     const response = await fetch(
       url.toString(),
       { 
-        next: { revalidate: false }, // Static (cache forever)
+        cache: 'force-cache',
         headers: {
           ...authHeader
         }
