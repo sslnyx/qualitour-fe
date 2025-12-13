@@ -1,4 +1,4 @@
-import { getTours } from '@/lib/wordpress';
+import { searchToursAdvanced } from '@/lib/wordpress';
 import type { WPTour } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
 import Link from 'next/link';
@@ -38,26 +38,15 @@ export default async function ToursPage({ searchParams }: ToursPageProps) {
   const perPage = 12; // Default from tour-item page builder element
 
   try {
-    // Fetch tours with pagination
-    const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
-    const url = new URL(`${apiUrl}/tour`);
-    url.searchParams.append('per_page', perPage.toString());
-    url.searchParams.append('page', page.toString());
-    url.searchParams.append('orderby', 'date');
-    url.searchParams.append('order', 'desc');
-    url.searchParams.append('_embed', 'true');
+    const result = await searchToursAdvanced({
+      page,
+      per_page: perPage,
+      lang: lang !== 'en' ? lang : undefined,
+    });
 
-    const response = await fetch(url.toString());
-    
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
-    }
-
-    // Get total count from headers
-    totalTours = parseInt(response.headers.get('X-WP-Total') || '0');
-    totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
-    
-    tours = await response.json();
+    tours = result.tours;
+    totalTours = result.total;
+    totalPages = result.totalPages;
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch tours';
     console.error('Error fetching tours:', e);

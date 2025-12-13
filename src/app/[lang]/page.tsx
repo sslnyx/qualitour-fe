@@ -33,12 +33,11 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
     if (featuredTag) {
       tours = await getTours({ 
         per_page: 12, // Keep homepage light; tag currently has ~11 tours
-        tour_tag: featuredTag.id,
-        _embed: true
+        tour_tag: featuredTag.id
       }, lang);
     } else {
       // Fallback: show latest tours if no featured tag exists
-      tours = await getTours({ per_page: 12, _embed: true }, lang);
+      tours = await getTours({ per_page: 12 }, lang);
     }
   } catch (e) {
     toursError = e instanceof Error ? e.message : 'Failed to fetch tours';

@@ -53,8 +53,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
   });
 
   // Add featured image if not already in gallery
-  const featuredImageUrl = tour.featured_image_url?.full?.url || 
-                          tour._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+  const featuredImageUrl = tour.featured_image_url?.full?.url;
   
   if (featuredImageUrl && !galleryImages.includes(featuredImageUrl)) {
     galleryImages.unshift(featuredImageUrl);

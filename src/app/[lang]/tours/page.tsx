@@ -47,106 +47,36 @@ export default async function ToursPage({ params, searchParams }: ToursPageProps
 
   try {
     // Fetch destinations and activities for filter dropdowns
-    destinations = await getTourDestinations({ per_page: 100 });
-    activities = await getTourActivities({ per_page: 100 });
+    destinations = await getTourDestinations({ per_page: 100, lang });
+    activities = await getTourActivities({ per_page: 100, lang });
 
-    // Use advanced search API if filters are applied
-    if (searchQuery || selectedDestination || selectedActivity) {
-      console.log('[ToursPage] Searching with filters:', { searchQuery, selectedDestination, selectedActivity, page });
-      
-      const searchResult = await searchToursAdvanced({
+    const searchResult = await searchToursAdvanced({
+      query: searchQuery,
+      destination: selectedDestination,
+      activity: selectedActivity,
+      page,
+      per_page: perPage,
+      lang: lang !== 'en' ? lang : undefined,
+    });
+
+    tours = searchResult.tours;
+    totalTours = searchResult.total;
+    totalPages = searchResult.totalPages;
+
+    // Fallback to English if no tours found and not already English
+    if ((!tours || tours.length === 0) && lang !== 'en') {
+      const fallbackResult = await searchToursAdvanced({
         query: searchQuery,
         destination: selectedDestination,
         activity: selectedActivity,
         page,
         per_page: perPage,
-        lang: lang !== 'en' ? lang : undefined,
       });
 
-      tours = searchResult.tours;
-      totalTours = searchResult.total;
-      totalPages = searchResult.totalPages;
-
-      console.log('[ToursPage] Search results:', { total: totalTours, found: tours.length, pages: totalPages });
-    } else {
-      // Fetch all tours without filters
-      console.log('[ToursPage] Fetching all tours, page:', page);
-      
-      const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
-      const url = new URL(`${apiUrl}/tour`);
-      
-      // Handle Basic Auth for Local Live Link
-      let authHeader = {};
-      let username = url.username;
-      let password = url.password;
-      
-      if (!username || !password) {
-        username = process.env.WORDPRESS_AUTH_USER || '';
-        password = process.env.WORDPRESS_AUTH_PASS || '';
-      }
-      
-      if (username && password) {
-        const credentials = Buffer.from(`${username}:${password}`).toString('base64');
-        authHeader = { 'Authorization': `Basic ${credentials}` };
-        url.username = '';
-        url.password = '';
-      }
-
-      url.searchParams.append('per_page', perPage.toString());
-      url.searchParams.append('page', page.toString());
-      url.searchParams.append('orderby', 'date');
-      url.searchParams.append('order', 'desc');
-      url.searchParams.append('_embed', 'true');
-      
-      if (lang && lang !== 'en') {
-        url.searchParams.append('lang', lang);
-      }
-
-      let response = await fetch(url.toString(), {
-        headers: {
-          ...authHeader
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      totalTours = parseInt(response.headers.get('X-WP-Total') || '0');
-      totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
-      tours = await response.json();
-
-      // Fallback to English if no tours found and not already English
-      if ((!tours || tours.length === 0) && lang !== 'en') {
-        const enUrl = new URL(`${apiUrl}/tour`);
-        
-        // Handle Basic Auth for fallback URL
-        if (enUrl.username && enUrl.password) {
-          enUrl.username = '';
-          enUrl.password = '';
-        }
-        // Use environment variables for auth if URL doesn't have them
-        if (!username && !password) {
-          username = process.env.WORDPRESS_AUTH_USER || '';
-          password = process.env.WORDPRESS_AUTH_PASS || '';
-        }
-
-        enUrl.searchParams.append('per_page', perPage.toString());
-        enUrl.searchParams.append('page', page.toString());
-        enUrl.searchParams.append('orderby', 'date');
-        enUrl.searchParams.append('order', 'desc');
-        enUrl.searchParams.append('_embed', 'true');
-        response = await fetch(enUrl.toString(), {
-          headers: {
-            ...authHeader
-          }
-        });
-        if (response.ok) {
-          totalTours = parseInt(response.headers.get('X-WP-Total') || '0');
-          totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '0');
-          tours = await response.json();
-          isFallbackToEnglish = true;
-        }
-      }
+      tours = fallbackResult.tours;
+      totalTours = fallbackResult.total;
+      totalPages = fallbackResult.totalPages;
+      isFallbackToEnglish = true;
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch tours';

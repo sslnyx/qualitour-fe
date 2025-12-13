@@ -351,6 +351,14 @@ export interface WPTour {
   featured_image_url?: WPTourImageSizes;
   tour_meta?: WPTourMeta;
   goodlayers_data?: GoodLayersData;
+    tour_terms?: {
+      categories?: Array<{ id: number; slug: string; name: string }>;
+      tags?: Array<{ id: number; slug: string; name: string }>;
+      destinations?: Array<{ id: number; slug: string; name: string }>;
+      activities?: Array<{ id: number; slug: string; name: string }>;
+      durations?: Array<{ id: number; slug: string; name: string }>;
+      types?: Array<{ id: number; slug: string; name: string }>;
+    };
   _embedded?: {
     author?: WPUser[];
     'wp:featuredmedia'?: WPMedia[];

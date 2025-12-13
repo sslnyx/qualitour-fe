@@ -17,7 +17,9 @@ export default async function TourDurationPage({ params, searchParams }: Props) 
   const duration = await getTourDurationBySlug(slug);
   if (!duration) notFound();
 
-  console.log(`[DurationPage] Fetching duration=${slug} tours, page ${currentPage}, lang ${lang}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DurationPage] Fetching duration=${slug} tours, page ${currentPage}, lang ${lang}`);
+  }
   let tours: WPTour[] = [];
   let error: string | null = null;
 
@@ -37,6 +39,7 @@ export default async function TourDurationPage({ params, searchParams }: Props) 
     url.searchParams.set('per_page', String(perPage));
     url.searchParams.set('page', String(currentPage));
     url.searchParams.set('_embed', 'true');
+    url.searchParams.set('_fields', 'id,slug,title,excerpt,featured_media,tour_category,tour_tag,featured_image_url,tour_meta,_embedded');
     url.searchParams.set('orderby', 'date');
     url.searchParams.set('order', 'desc');
     url.searchParams.set('lang', lang);
@@ -60,12 +63,23 @@ export default async function TourDurationPage({ params, searchParams }: Props) 
       urlObj.password = '';
     }
 
+    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+    const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
+    const timeoutId = controller
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
     const response = await fetch(urlObj.toString(), {
       next: { revalidate: 3600 },
+      signal: controller?.signal,
       headers: {
         ...authHeader,
         'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
       },
+    }).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId);
     });
 
     if (!response.ok) {
@@ -75,7 +89,9 @@ export default async function TourDurationPage({ params, searchParams }: Props) 
     totalTours = Number(response.headers.get('X-WP-Total') || '0');
     totalPages = Number(response.headers.get('X-WP-TotalPages') || '0');
     tours = (await response.json()) as WPTour[];
-    console.log(`[DurationPage] Got ${tours.length} tours for duration ${slug} on page ${currentPage}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DurationPage] Got ${tours.length} tours for duration ${slug} on page ${currentPage}`);
+    }
   } catch (e) {
     console.error(`[DurationPage] Error fetching tours:`, e);
     error = e instanceof Error ? e.message : 'Failed to fetch tours';

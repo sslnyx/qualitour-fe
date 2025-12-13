@@ -62,6 +62,7 @@ export default async function TourTypePage({
     url.searchParams.set('per_page', String(perPage));
     url.searchParams.set('page', String(page));
     url.searchParams.set('_embed', 'true');
+    url.searchParams.set('_fields', 'id,slug,title,excerpt,featured_media,tour_category,tour_tag,featured_image_url,tour_meta,_embedded');
     url.searchParams.set('orderby', 'date');
     url.searchParams.set('order', 'desc');
     url.searchParams.set('lang', lang);
@@ -85,12 +86,23 @@ export default async function TourTypePage({
       urlObj.password = '';
     }
 
+    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+    const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
+    const timeoutId = controller
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
     const response = await fetch(urlObj.toString(), {
       next: { revalidate: 3600 },
+      signal: controller?.signal,
       headers: {
         ...authHeader,
         'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
       },
+    }).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId);
     });
 
     if (!response.ok) {

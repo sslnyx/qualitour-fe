@@ -38,17 +38,17 @@ export default function FeaturedToursCarousel({
 
   // Get badge display logic
   const getBadgeInfo = (tour: WPTour) => {
-    const tourTags = tour._embedded?.["wp:term"]?.[1] || [];
+    const tourTags = tour.tour_terms?.tags || [];
 
     // Check for specific tags
     const bestSellerTag = tourTags.find(
       (tag: any) =>
         tag.slug === "best-seller" ||
-        tag.name.toLowerCase().includes("best seller")
+        String(tag.name || '').toLowerCase().includes("best seller")
     );
     const winterTag = tourTags.find(
       (tag: any) =>
-        tag.slug.includes("winter") || tag.name.toLowerCase().includes("winter")
+        String(tag.slug || '').includes("winter") || String(tag.name || '').toLowerCase().includes("winter")
     );
 
     if (bestSellerTag) {

@@ -56,8 +56,7 @@ export function TourCard({
   const rawImageUrl = 
     tour.featured_image_url?.[imageSize]?.url ||
     tour.featured_image_url?.large?.url ||
-    tour.featured_image_url?.medium?.url ||
-    tour._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+    tour.featured_image_url?.medium?.url;
   const imageUrl = rawImageUrl?.trim().replace(/\s+/g, '');
 
   // Pricing - check for Tourmaster discount

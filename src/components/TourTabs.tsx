@@ -84,7 +84,7 @@ export default function TourTabs({ tour }: { tour: WPTour }) {
       item.type === 'image' || 
       (item.type === 'text-box' && item.value?.content?.includes('<img'))
     )
-  ) || tour.featured_image_url?.full?.url || tour._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+  ) || tour.featured_image_url?.full?.url;
   
   // Check for FAQ in sections (accordion) or old tour_faq field
   const hasFAQ = sections.some(
