@@ -86,3 +86,21 @@
 2025-12-13T01:14:31.764859Z	Failed: Error while executing user command. Exited with error code: 1
 2025-12-13T01:14:31.773499Z	Failed: build command exited with code: 1
 2025-12-13T01:14:33.078447Z	Failed: error occurred while running build command
+
+---
+
+2025-12-13T01:23:49.190378Z	Cloning repository...
+2025-12-13T01:23:49.890469Z	HEAD is now at 1699da2 fix: make locale pages edge runtime (drop generateStaticParams)
+2025-12-13T01:24:39.151956Z	▲  Creating an optimized production build ...
+2025-12-13T01:24:45.060823Z	▲  ✓ Compiled successfully in 5.3s
+2025-12-13T01:25:02.487329Z	⚡️ Completed `npx vercel build`.
+2025-12-13T01:25:07.050462Z	⚡️ Build Summary (@cloudflare/next-on-pages v1.13.16)
+2025-12-13T01:25:07.051453Z	⚡️ Edge Function Routes (14)
+2025-12-13T01:25:07.052797Z	⚡️ Prerendered Routes (14)
+2025-12-13T01:25:07.062219Z	⚡️ Build log saved to '.vercel/output/static/_worker.js/nop-build-log.json'
+2025-12-13T01:25:09.185942Z	Found _worker.js in output directory. Uploading.
+2025-12-13T01:25:10.223628Z	▲ [WARNING] The package "node:buffer" wasn't found on the file system but is built into node.
+2025-12-13T01:25:10.22557Z	▲ [WARNING] The package "node:async_hooks" wasn't found on the file system but is built into node.
+2025-12-13T01:25:10.226301Z	✨ Compiled Worker successfully
+2025-12-13T01:25:26.433718Z	Success: Assets published!
+2025-12-13T01:25:31.833649Z	Error: Failed to publish your Function. Got error: Your Worker exceeded the size limit of 3 MiB. Please upgrade to a paid plan to deploy Workers up to 10 MiB.
