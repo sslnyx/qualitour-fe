@@ -14,7 +14,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
-import { getBusinessReviews } from '@/lib/wordpress/api';
 import type { GoogleReview, PlaceDetails } from '@/lib/wordpress/types';
 
 interface TourReviewsProps {
@@ -563,7 +562,7 @@ function ReviewsModalSlider({
                           alt={review.author_name}
                           width={48}
                           height={48}
-                          className="rounded-full object-cover flex-shrink-0"
+                          className="rounded-full object-cover shrink-0"
                         />
                       )}
                       <div>
@@ -639,7 +638,11 @@ export default function TourReviews({
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const data = await getBusinessReviews();
+        const res = await fetch('/api/reviews');
+        if (!res.ok) {
+          throw new Error('Failed to load reviews');
+        }
+        const data = (await res.json()) as PlaceDetails | null;
         setPlaceDetails(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load reviews');
@@ -745,7 +748,7 @@ export default function TourReviews({
                     alt={review.author_name}
                     width={40}
                     height={40}
-                    className="rounded-full object-cover flex-shrink-0"
+                    className="rounded-full object-cover shrink-0"
                   />
                 )}
                 <div>
