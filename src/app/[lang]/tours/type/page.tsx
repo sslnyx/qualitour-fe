@@ -1,10 +1,7 @@
 import { type Locale } from '@/i18n/config';
-import { i18n } from '@/i18n/config';
 import Link from 'next/link';
 
-export async function generateStaticParams() {
-  return i18n.locales.map((locale) => ({ lang: locale }));
-}
+export const runtime = 'edge';
 
 interface Props {
   params: Promise<{ lang: Locale }>;

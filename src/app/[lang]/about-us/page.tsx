@@ -3,12 +3,9 @@ import Container from '@/components/ui/Container';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
-import { i18n } from '@/i18n/config';
 import TourReviews from '@/components/TourReviews';
 
-export async function generateStaticParams() {
-  return i18n.locales.map((locale) => ({ lang: locale }));
-}
+export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: 'About Us | Qualitour',
