@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-initOpenNextCloudflareForDev();
+if (process.env.NODE_ENV === "development") {
+  try {
+    // Cloudflare CI environments may omit dev tooling; keep this optional.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
+    initOpenNextCloudflareForDev();
+  } catch {
+    // no-op
+  }
+}
 
 const nextConfig: NextConfig = {
   images: {
