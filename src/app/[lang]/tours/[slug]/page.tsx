@@ -7,35 +7,7 @@ import TourReviews from '@/components/TourReviews';
 import type { Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-  try {
-    // Generate params for all locales and tours
-    const allParams: { lang: Locale; slug: string }[] = [];
-    
-    for (const locale of i18n.locales) {
-      const tours = await getTours({ per_page: 100 }, locale);
-      tours.forEach((tour) => {
-        // Decode slugs because WordPress returns percent-encoded slugs (e.g., %e9%9f%93...)
-        // but Next.js route params should be clean, decoded values
-        let decodedSlug = tour.slug;
-        try {
-          decodedSlug = decodeURIComponent(tour.slug);
-        } catch {
-          // If decoding fails, use original slug
-          decodedSlug = tour.slug;
-        }
-        allParams.push({ lang: locale, slug: decodedSlug });
-      });
-    }
-    
-    return allParams;
-  } catch (error) {
-    console.error('Error generating static params for tours:', error);
-    return [];
-  }
-}
+export const runtime = 'edge';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale; slug: string }> }) {
   try {

@@ -25,10 +25,13 @@ function getCacheKey(endpoint: string, params: WPApiParams): string {
 /**
  * Determine ISR revalidation time based on endpoint type
  */
-function getRevalidateTime(endpoint: string): number {
+function getRevalidateTime(endpoint: string): number | false {
+  // Only tours need ISR (frequent updates)
   if (endpoint.includes('/tour') && !endpoint.includes('tour-')) return 900;    // Tours: 15 min
-  if (endpoint.includes('tour-')) return 86400;                                 // Taxonomies: 24h
-  return 3600;                                                                   // Default: 1h
+  
+  // Everything else (taxonomies, posts, pages) should be static (cache forever)
+  // to avoid Edge Runtime requirement and keep worker size down.
+  return false;
 }
 
 /**
