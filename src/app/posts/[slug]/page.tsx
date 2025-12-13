@@ -8,6 +8,8 @@ interface PostPageProps {
   }>;
 }
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   try {
     const posts = await getPosts({ per_page: 100 });

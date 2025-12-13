@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Poppins, ABeeZee, Dancing_Script, Kaushan_Script } from "next/font/google";
 import "./globals.css";
 
-export const runtime = 'edge';
-
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],

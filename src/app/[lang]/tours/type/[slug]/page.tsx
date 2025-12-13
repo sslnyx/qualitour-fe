@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from 'react';
 import { getToursByType, getTourTypeInfo } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';

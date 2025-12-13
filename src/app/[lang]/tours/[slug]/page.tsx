@@ -7,6 +7,8 @@ import TourReviews from '@/components/TourReviews';
 import type { Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   try {
     // Generate params for all locales and tours
