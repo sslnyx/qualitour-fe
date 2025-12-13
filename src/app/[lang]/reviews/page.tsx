@@ -1,6 +1,7 @@
 import TestGoogleReviews from '@/components/TestGoogleReviews';
 import { i18n } from '@/i18n/config';
 
+export const runtime = 'edge';
 export const dynamic = 'force-static';
 
 export async function generateStaticParams() {

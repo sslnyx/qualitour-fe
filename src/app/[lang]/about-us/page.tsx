@@ -6,6 +6,7 @@ import { getLocalePrefix } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 import TourReviews from '@/components/TourReviews';
 
+export const runtime = 'edge';
 export const dynamic = 'force-static';
 
 export async function generateStaticParams() {
