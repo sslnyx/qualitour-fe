@@ -82,7 +82,7 @@ export default function Header({ lang }: { lang: Locale }) {
       <Container>
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href={`${localePrefix}/`} className="flex items-center" style={{ paddingTop: '34px', paddingBottom: '36px' }}>
+          <Link prefetch={false} href={`${localePrefix}/`} className="flex items-center" style={{ paddingTop: '34px', paddingBottom: '36px' }}>
             <Image 
               src={QualitourLogo}
               alt="Qualitour"
@@ -111,6 +111,7 @@ export default function Header({ lang }: { lang: Locale }) {
                         {item.submenu.map((subitem) => (
                           <Link
                             key={subitem.name}
+                            prefetch={false}
                             href={`${localePrefix}${subitem.href}`}
                             className="block px-4 py-2 text-sm text-[#828282] hover:text-primary hover:bg-gray-50 transition-colors"
                           >
@@ -122,6 +123,7 @@ export default function Header({ lang }: { lang: Locale }) {
                   </>
                 ) : (
                   <Link
+                    prefetch={false}
                     href={`${localePrefix}${item.href}`}
                     className="text-[#828282] hover:text-primary transition-colors font-semibold uppercase text-sm tracking-wider"
                   >
@@ -191,6 +193,7 @@ export default function Header({ lang }: { lang: Locale }) {
                           {item.submenu.map((subitem) => (
                             <Link
                               key={subitem.name}
+                              prefetch={false}
                               href={`${localePrefix}${subitem.href}`}
                               className="block py-1 text-sm text-[#828282] hover:text-primary transition-colors"
                             >
@@ -202,6 +205,7 @@ export default function Header({ lang }: { lang: Locale }) {
                     </>
                   ) : (
                     <Link
+                      prefetch={false}
                       href={`${localePrefix}${item.href}`}
                       className="block py-2 text-text-heading hover:text-primary transition-colors font-medium"
                     >

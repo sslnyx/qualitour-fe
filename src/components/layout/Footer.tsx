@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Container from '@/components/ui/Container';
+import { getLocalePrefix, type Locale } from '@/i18n/config';
 import QualitourLogo from '@/assets/qualitour_logo.png';
 import IataLogo from '@/assets/iata.png';
 
-export default function Footer() {
+export default function Footer({ lang }: { lang: Locale }) {
+  const localePrefix = getLocalePrefix(lang);
+
   return (
     <footer className="bg-[#1a1a1a] text-[#999]">
       <div className="py-16">
@@ -12,7 +15,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Column 1: Logo & IATA */}
             <div className="flex flex-col items-center md:items-center space-y-8">
-              <Link href="/">
+              <Link prefetch={false} href={`${localePrefix}/`}>
                 <Image 
                   src={QualitourLogo}
                   alt="Qualitour"
@@ -54,10 +57,10 @@ export default function Footer() {
             <div>
               <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-6">Quick Links</h3>
               <ul className="space-y-3 text-[15px]">
-                <li><Link href="/tours" className="hover:text-[#f7941e] transition-colors">Tours</Link></li>
-                <li><Link href="/about-us" className="hover:text-[#f7941e] transition-colors">About Us</Link></li>
-                <li><Link href="/contact" className="hover:text-[#f7941e] transition-colors">Contact Us</Link></li>
-                <li><Link href="/privacy-policy" className="hover:text-[#f7941e] transition-colors">Privacy Policy</Link></li>
+                <li><Link prefetch={false} href={`${localePrefix}/tours`} className="hover:text-[#f7941e] transition-colors">Tours</Link></li>
+                <li><Link prefetch={false} href={`${localePrefix}/about-us`} className="hover:text-[#f7941e] transition-colors">About Us</Link></li>
+                <li><Link prefetch={false} href={`${localePrefix}/contact`} className="hover:text-[#f7941e] transition-colors">Contact Us</Link></li>
+                <li><Link prefetch={false} href={`${localePrefix}/privacy-policy`} className="hover:text-[#f7941e] transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
 

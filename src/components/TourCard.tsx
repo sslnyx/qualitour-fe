@@ -117,6 +117,7 @@ export function TourCard({
 
   return (
     <Link 
+      prefetch={false}
       href={`${localePrefix}/tours/${tour.slug}`} 
       className={`group block ${cardClass} ${contentLayout}`}
     >
@@ -133,7 +134,6 @@ export function TourCard({
                 ? '(max-width: 640px) 100vw, 33vw'
                 : '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
             }
-            loading="eager"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">

@@ -721,7 +721,7 @@ export async function searchToursAdvanced(options: {
   // Add destination filter if provided
   if (destination) {
     const destId = typeof destination === 'string' 
-      ? (await getTourDestinationBySlug(destination))?.id 
+      ? (await getTourDestinationBySlug(destination, lang))?.id 
       : destination;
     if (destId) {
       url.searchParams.append('tour-destination', destId.toString());
@@ -733,7 +733,7 @@ export async function searchToursAdvanced(options: {
     const destIds = await Promise.all(
       destinations.map(async (dest) => {
         if (typeof dest === 'string') {
-          return (await getTourDestinationBySlug(dest))?.id;
+          return (await getTourDestinationBySlug(dest, lang))?.id;
         }
         return dest;
       })
@@ -762,8 +762,33 @@ export async function searchToursAdvanced(options: {
 
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
 
-  const response = await fetch(url.toString(), {
+  // Add Basic Auth for protected WP endpoints (Workers/Production)
+  const urlObj = new URL(url.toString());
+  let authHeader: Record<string, string> = {};
+
+  // Try URL credentials first (Local Live Link), then env vars (Workers)
+  let username = urlObj.username;
+  let password = urlObj.password;
+
+  if (!username || !password) {
+    username = process.env.WORDPRESS_AUTH_USER || '';
+    password = process.env.WORDPRESS_AUTH_PASS || '';
+  }
+
+  if (username && password) {
+    const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+    authHeader = { Authorization: `Basic ${credentials}` };
+    // Remove credentials from URL to avoid fetch issues / leaking
+    urlObj.username = '';
+    urlObj.password = '';
+  }
+
+  const response = await fetch(urlObj.toString(), {
     next: { revalidate: getRevalidateTime('/tour') },
+    headers: {
+      ...authHeader,
+      'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
+    },
   });
 
   if (process.env.NODE_ENV === 'development' && startTime) {
@@ -772,6 +797,12 @@ export async function searchToursAdvanced(options: {
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error(
+        'Search API Error: 401 Unauthorized. ' +
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+      );
+    }
     throw new Error(`Search API Error: ${response.status} ${response.statusText}`);
   }
 

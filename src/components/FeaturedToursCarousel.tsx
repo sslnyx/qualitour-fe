@@ -87,6 +87,7 @@ export default function FeaturedToursCarousel({
                 className="embla__slide flex-[0_0_calc(100%)] min-w-0 md:flex-[0_0_calc(50%-1rem)] lg:flex-[0_0_calc(25%-1rem)]"
               >
                 <Link
+                  prefetch={false}
                   href={`/${lang === 'en' ? '' : lang + '/'}tours/${tour.slug}`}
                   className="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 block h-full"
                 >
@@ -95,6 +96,7 @@ export default function FeaturedToursCarousel({
                     <img
                       src={imageUrl}
                       alt={tour.title.rendered}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {/* Discount badge - top priority */}
