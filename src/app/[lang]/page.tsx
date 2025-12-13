@@ -32,7 +32,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
     
     if (featuredTag) {
       tours = await getTours({ 
-        per_page: 100, // Fetch all featured tours (tag shows 11 tours)
+        per_page: 12, // Keep homepage light; tag currently has ~11 tours
         tour_tag: featuredTag.id,
         _embed: true
       }, lang);
