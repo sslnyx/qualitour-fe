@@ -17,18 +17,24 @@ export default async function LocaleLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params as { lang: Locale };
-  
-  // Fetch menu data and dictionary
-  const [activitiesRaw, destinationsRaw, dict] = await Promise.all([
-    getTourActivities({ per_page: 100, lang }),
-    getTourDestinations({ per_page: 100, lang }),
-    getDictionary(lang)
-  ]);
 
-  // Translate taxonomy terms to the requested language
+  const dict = await getDictionary(lang);
+
+  let activitiesRaw: Awaited<ReturnType<typeof getTourActivities>> = [];
+  let destinationsRaw: Awaited<ReturnType<typeof getTourDestinations>> = [];
+
+  try {
+    [activitiesRaw, destinationsRaw] = await Promise.all([
+      getTourActivities({ per_page: 100, lang }),
+      getTourDestinations({ per_page: 100, lang }),
+    ]);
+  } catch (e) {
+    console.error('[Layout] Failed to fetch menu taxonomies:', e);
+  }
+
   const [activities, destinations] = await Promise.all([
     translateTaxonomyTerms(activitiesRaw, lang, 'activity'),
-    translateTaxonomyTerms(destinationsRaw, lang, 'destination')
+    translateTaxonomyTerms(destinationsRaw, lang, 'destination'),
   ]);
 
   return (
