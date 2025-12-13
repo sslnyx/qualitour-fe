@@ -97,9 +97,16 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
       urlObj.password = '';
     }
 
+    const revalidateTime = getRevalidateTime(endpoint);
+
     const response = await fetch(urlObj.toString(), {
       // Smart ISR revalidation based on endpoint type
-      next: { revalidate: getRevalidateTime(endpoint) },
+      // If revalidateTime is false, use force-cache (Static)
+      // If revalidateTime is a number, use next: { revalidate: n } (ISR)
+      ...(revalidateTime === false 
+        ? { cache: 'force-cache' } 
+        : { next: { revalidate: revalidateTime } }
+      ),
       ...options,
       headers: {
         'Content-Type': 'application/json',
