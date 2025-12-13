@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Container from '@/components/ui/Container';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import type { Locale } from '@/i18n/config';
@@ -55,12 +56,38 @@ const navigation = [
 ];
 
 export default function Header({ lang }: { lang: Locale }) {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Get the locale prefix (empty for 'en', '/zh' for Chinese)
   const localePrefix = getLocalePrefix(lang);
+
+  const prefetchOnIntent = useCallback(
+    (href: string) => {
+      if (typeof window === 'undefined') return;
+      // Avoid doing work on touch-only devices.
+      if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) return;
+      router.prefetch(href);
+    },
+    [router]
+  );
+
+  const prefetchOnInteraction = useCallback(
+    (href: string) => {
+      if (typeof window === 'undefined') return;
+      router.prefetch(href);
+    },
+    [router]
+  );
+
+  const intentPrefetchProps = (href: string) => ({
+    onMouseEnter: () => prefetchOnIntent(href),
+    onFocus: () => prefetchOnIntent(href),
+    onTouchStart: () => prefetchOnInteraction(href),
+    onPointerDown: () => prefetchOnInteraction(href),
+  });
 
   const handleMouseEnter = (itemName: string) => {
     if (closeTimeout) {
@@ -82,7 +109,13 @@ export default function Header({ lang }: { lang: Locale }) {
       <Container>
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link prefetch={false} href={`${localePrefix}/`} className="flex items-center" style={{ paddingTop: '34px', paddingBottom: '36px' }}>
+          <Link
+            prefetch={false}
+            href={`${localePrefix}/`}
+            className="flex items-center"
+            style={{ paddingTop: '34px', paddingBottom: '36px' }}
+            {...intentPrefetchProps(`${localePrefix}/`)}
+          >
             <Image 
               src={QualitourLogo}
               alt="Qualitour"
@@ -113,6 +146,7 @@ export default function Header({ lang }: { lang: Locale }) {
                             key={subitem.name}
                             prefetch={false}
                             href={`${localePrefix}${subitem.href}`}
+                            {...intentPrefetchProps(`${localePrefix}${subitem.href}`)}
                             className="block px-4 py-2 text-sm text-[#828282] hover:text-primary hover:bg-gray-50 transition-colors"
                           >
                             {subitem.name}
@@ -125,6 +159,7 @@ export default function Header({ lang }: { lang: Locale }) {
                   <Link
                     prefetch={false}
                     href={`${localePrefix}${item.href}`}
+                    {...intentPrefetchProps(`${localePrefix}${item.href}`)}
                     className="text-[#828282] hover:text-primary transition-colors font-semibold uppercase text-sm tracking-wider"
                   >
                     {item.name}

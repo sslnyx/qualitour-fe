@@ -760,6 +760,12 @@ export async function searchToursAdvanced(options: {
     url.searchParams.append('lang', lang);
   }
 
+  // OpenNext/Next fetch caching can persist across deployments. If an earlier deployment
+  // cached an unauthenticated 401 (or other bad response) for /tour, we need a stable
+  // cache key so the fixed authenticated request doesn't keep reusing the poisoned entry.
+  // WordPress REST ignores unknown query params, so this is safe.
+  url.searchParams.set('qt_cache', 'v1');
+
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
 
   // Add Basic Auth for protected WP endpoints (Workers/Production)
