@@ -99,7 +99,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
       <div className="container-qualitour">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={localePrefix + '/'} className="flex items-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+          <Link prefetch={false} href={localePrefix + '/'} className="flex items-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
             <Image 
               src={QualitourLogo}
               alt="Qualitour"
@@ -111,7 +111,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
           </Link>
           {/* Desktop Nav */}
           <ul className="hidden md:flex items-center space-x-2 lg:space-x-4">
-          <li><Link href={localePrefix + '/'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">Home</Link></li>
+          <li><Link prefetch={false} href={localePrefix + '/'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">Home</Link></li>
           <li
             className="relative"
             onMouseEnter={() => {
@@ -140,32 +140,32 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="space-y-1">
                       {tourTypeLinks.map((link) => (
                         <li key={link.slug}>
-                          <Link href={localePrefix + `/tours/${link.type}/${link.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
+                          <Link prefetch={false} href={localePrefix + `/tours/${link.type}/${link.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
                             {link.label}
                           </Link>
                         </li>
                       ))}
-                      <li className="pt-2"><Link href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">{t('byDuration', 'By Duration')}</Link></li>
-                      <li><Link href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">{t('searchAllTours', 'Search All Tours')}</Link></li>
-                      <li><Link href={localePrefix + '/tours/featured'} className="font-bold">{t('featuredTours', 'Featured Tours')}</Link></li>
+                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">{t('byDuration', 'By Duration')}</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">{t('searchAllTours', 'Search All Tours')}</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold">{t('featuredTours', 'Featured Tours')}</Link></li>
                     </ul>
                   </div>
                   {/* By Destination - Dynamic Grid */}
-                  <div className="flex-[2] px-4">
+                  <div className="flex-2 px-4">
                     <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>By Destination</h4>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
                       {destinationTree.map((dest: any) => (
                         <div key={dest.id} className="break-inside-avoid mb-2">
                           {dest.children.length > 0 ? (
                             <>
-                              <Link href={`${localePrefix}/tours/destination/${dest.slug}`} onClick={handleMegamenuLinkClick} className="font-bold text-gray-800 hover:text-[#f7941e] mb-1 block flex items-center">
+                              <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`} onClick={handleMegamenuLinkClick} className="font-bold text-gray-800 hover:text-[#f7941e] mb-1 flex items-center">
                                 {dest.name}
                                 <span className="material-symbols-outlined ml-1 text-[16px]">chevron_right</span>
                               </Link>
                               <ul className="space-y-1 pl-3 border-l-2 border-gray-100">
                                 {dest.children.map((child: any) => (
                                   <li key={child.id}>
-                                    <Link href={`${localePrefix}/tours/destination/${child.slug}`} onClick={handleMegamenuLinkClick} className="text-sm text-gray-600 hover:text-[#f7941e] block py-0.5">
+                                    <Link prefetch={false} href={`${localePrefix}/tours/destination/${child.slug}`} onClick={handleMegamenuLinkClick} className="text-sm text-gray-600 hover:text-[#f7941e] block py-0.5">
                                       {child.name}
                                     </Link>
                                     {/* Third Level (Cities/Regions) */}
@@ -173,7 +173,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                                       <ul className="pl-3 mt-0.5 space-y-0.5 border-l border-gray-200 ml-1">
                                         {child.children.map((grandchild: any) => (
                                           <li key={grandchild.id}>
-                                            <Link href={`${localePrefix}/tours/destination/${grandchild.slug}`} onClick={handleMegamenuLinkClick} className="text-xs text-gray-500 hover:text-[#f7941e] block py-0.5">
+                                            <Link prefetch={false} href={`${localePrefix}/tours/destination/${grandchild.slug}`} onClick={handleMegamenuLinkClick} className="text-xs text-gray-500 hover:text-[#f7941e] block py-0.5">
                                               {grandchild.name}
                                             </Link>
                                           </li>
@@ -185,7 +185,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                               </ul>
                             </>
                           ) : (
-                            <Link href={`${localePrefix}/tours/destination/${dest.slug}`} onClick={handleMegamenuLinkClick} className="font-medium text-gray-700 hover:text-[#f7941e] block py-1">
+                            <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`} onClick={handleMegamenuLinkClick} className="font-medium text-gray-700 hover:text-[#f7941e] block py-1">
                               {dest.name}
                             </Link>
                           )}
@@ -199,7 +199,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="space-y-1">
                       {activityTree.map((activity: any) => (
                         <li key={activity.id}>
-                          <Link href={localePrefix + `/tours/activity/${activity.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
+                          <Link prefetch={false} href={localePrefix + `/tours/activity/${activity.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
                             {activity.name}
                           </Link>
                         </li>
@@ -212,7 +212,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="space-y-1">
                       {durationLinks.map((link) => (
                         <li key={link.slug}>
-                          <Link href={localePrefix + `/tours/duration/${link.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
+                          <Link prefetch={false} href={localePrefix + `/tours/duration/${link.slug}`} onClick={handleMegamenuLinkClick} className="hover:text-[#f7941e]">
                             {link.label}
                           </Link>
                         </li>
@@ -223,9 +223,9 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
               </div>
             )}
           </li>
-          <li><Link href={localePrefix + '/about-us'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">About</Link></li>
-          <li><Link href={localePrefix + '/contact'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">Contact</Link></li>
-          <li><Link href={localePrefix + '/faq'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">FAQ</Link></li>
+          <li><Link prefetch={false} href={localePrefix + '/about-us'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">About</Link></li>
+          <li><Link prefetch={false} href={localePrefix + '/contact'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">Contact</Link></li>
+          <li><Link prefetch={false} href={localePrefix + '/faq'} className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium">FAQ</Link></li>
         </ul>
         {/* Language Switcher */}
         <div className="hidden md:block ml-4">
@@ -242,7 +242,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-200 px-4 py-2">
           <ul className="space-y-2">
-            <li><Link href={localePrefix + '/'} className="block py-2 text-gray-700 font-medium">Home</Link></li>
+            <li><Link prefetch={false} href={localePrefix + '/'} className="block py-2 text-gray-700 font-medium">Home</Link></li>
             <li>
               <button className="block w-full text-left py-2 text-gray-700 font-medium" onClick={() => setMegaOpen(!megaOpen)}>
                 Tours <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
@@ -254,14 +254,14 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="ml-2">
                       {tourTypeLinks.map((link) => (
                         <li key={link.slug}>
-                          <Link href={localePrefix + `/tours/${link.type}/${link.slug}`} onClick={() => setMobileOpen(false)}>
+                          <Link prefetch={false} href={localePrefix + `/tours/${link.type}/${link.slug}`} onClick={() => setMobileOpen(false)}>
                             {link.label}
                           </Link>
                         </li>
                       ))}
-                      <li className="pt-2"><Link href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">By Duration</Link></li>
-                      <li><Link href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">Search All Tours</Link></li>
-                      <li><Link href={localePrefix + '/tours/featured'} className="font-bold">Featured Tours</Link></li>
+                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">By Duration</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">Search All Tours</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold">Featured Tours</Link></li>
                     </ul>
                   </div>
                   <div className="mb-2">
@@ -269,12 +269,12 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="ml-2">
                       {destinationTree.map((dest: any) => (
                         <li key={dest.id}>
-                          <Link href={`${localePrefix}/tours/destination/${dest.slug}`}>{dest.name}</Link>
+                          <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`}>{dest.name}</Link>
                           {dest.children.length > 0 && (
                             <ul className="ml-2 border-l pl-2">
                               {dest.children.map((child: any) => (
                                 <li key={child.id}>
-                                  <Link href={`${localePrefix}/tours/destination/${child.slug}`}>{child.name}</Link>
+                                  <Link prefetch={false} href={`${localePrefix}/tours/destination/${child.slug}`}>{child.name}</Link>
                                 </li>
                               ))}
                             </ul>
@@ -288,12 +288,12 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="ml-2">
                       {activityTree.map((activity: any) => (
                         <li key={activity.id}>
-                          <Link href={`${localePrefix}/tours/activity/${activity.slug}`} onClick={() => setMobileOpen(false)}>{activity.name}</Link>
+                          <Link prefetch={false} href={`${localePrefix}/tours/activity/${activity.slug}`} onClick={() => setMobileOpen(false)}>{activity.name}</Link>
                           {activity.children && activity.children.length > 0 && (
                             <ul className="ml-2 border-l pl-2">
                               {activity.children.map((child: any) => (
                                 <li key={child.id}>
-                                  <Link href={`${localePrefix}/tours/activity/${child.slug}`} onClick={() => setMobileOpen(false)}>{child.name}</Link>
+                                  <Link prefetch={false} href={`${localePrefix}/tours/activity/${child.slug}`} onClick={() => setMobileOpen(false)}>{child.name}</Link>
                                 </li>
                               ))}
                             </ul>
@@ -307,7 +307,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                     <ul className="ml-2">
                       {durationLinks.map((link) => (
                         <li key={link.slug}>
-                          <Link href={localePrefix + `/tours/duration/${link.slug}`} onClick={() => setMobileOpen(false)}>
+                          <Link prefetch={false} href={localePrefix + `/tours/duration/${link.slug}`} onClick={() => setMobileOpen(false)}>
                             {link.label}
                           </Link>
                         </li>
@@ -317,9 +317,9 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                 </div>
               )}
             </li>
-            <li><Link href={localePrefix + '/about-us'} className="block py-2 text-gray-700 font-medium">About</Link></li>
-            <li><Link href={localePrefix + '/contact'} className="block py-2 text-gray-700 font-medium">Contact</Link></li>
-            <li><Link href={localePrefix + '/faq'} className="block py-2 text-gray-700 font-medium">FAQ</Link></li>
+            <li><Link prefetch={false} href={localePrefix + '/about-us'} className="block py-2 text-gray-700 font-medium">About</Link></li>
+            <li><Link prefetch={false} href={localePrefix + '/contact'} className="block py-2 text-gray-700 font-medium">Contact</Link></li>
+            <li><Link prefetch={false} href={localePrefix + '/faq'} className="block py-2 text-gray-700 font-medium">FAQ</Link></li>
             <li><Link href="#" className="block py-2 text-gray-700 font-medium border border-gray-300 rounded mt-2" style={{ borderColor: brandOrange }}>EN / ZH</Link></li>
           </ul>
         </div>
