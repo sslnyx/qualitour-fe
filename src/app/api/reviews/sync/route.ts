@@ -7,6 +7,8 @@
 
 import { fetchSerpAPIReviews, transformSerpAPIReview } from '@/lib/serpapi';
 
+export const runtime = 'edge';
+
 const WORDPRESS_API = process.env.NEXT_PUBLIC_WORDPRESS_API_URL?.replace('/wp/v2', '');
 const SYNC_KEY = process.env.REVIEWS_SYNC_KEY || 'sync-key-' + process.env.NEXT_PUBLIC_WORDPRESS_API_URL?.split('//')[1];
 
