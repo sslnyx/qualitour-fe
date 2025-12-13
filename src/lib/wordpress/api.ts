@@ -462,7 +462,7 @@ export async function getTourDestinationBySlug(slug: string, lang?: string): Pro
     const response = await fetch(
       url.toString(),
       { 
-        next: { revalidate: 3600 },
+        next: { revalidate: getRevalidateTime('/tour') },
         headers: {
           ...authHeader
         }
@@ -741,7 +741,7 @@ export async function searchToursAdvanced(options: {
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
 
   const response = await fetch(url.toString(), {
-    next: { revalidate: 3600 },
+    next: { revalidate: getRevalidateTime('/tour') },
   });
 
   if (process.env.NODE_ENV === 'development' && startTime) {
@@ -1145,7 +1145,7 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
     const response = await fetch(
       url.toString(),
       { 
-        next: { revalidate: 3600 }, // ISR cache for 1 hour
+        next: { revalidate: false }, // Static (cache forever)
         headers: {
           ...authHeader
         }
