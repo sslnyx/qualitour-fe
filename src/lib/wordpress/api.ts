@@ -1,4 +1,4 @@
-import { WPPost, WPPage, WPCategory, WPTag, WPMedia, WPApiParams, WPTour, WPTourCategory, WPTourTag, WPTourActivity, WPTourDestination, GoogleReview, PlaceDetails } from './types';
+import { WPPost, WPPage, WPCategory, WPTag, WPMedia, WPApiParams, WPTour, WPTourCategory, WPTourTag, WPTourActivity, WPTourDestination, WPTourDuration, WPTourType, GoogleReview, PlaceDetails } from './types';
 
 // Helper to get API URL dynamically
 function getApiUrl() {
@@ -28,6 +28,14 @@ function getCacheKey(endpoint: string, params: WPApiParams): string {
 function getRevalidateTime(endpoint: string): number | false {
   // Only tours need ISR (frequent updates)
   if (endpoint.includes('/tour') && !endpoint.includes('tour-')) return 900;    // Tours: 15 min
+
+  // Tour taxonomies change occasionally (menu/hierarchy updates)
+  if (
+    endpoint.includes('tour-destination') ||
+    endpoint.includes('tour-activity') ||
+    endpoint.includes('tour-duration') ||
+    endpoint.includes('tour-type')
+  ) return 3600; // 1 hour
   
   // Everything else (taxonomies, posts, pages) should be static (cache forever)
   // to avoid Edge Runtime requirement and keep worker size down.
@@ -356,10 +364,15 @@ export async function getTourById(id: number): Promise<WPTour | null> {
 /**
  * Get tours by category
  */
-export async function getToursByCategory(categoryId: number, params: WPApiParams = {}): Promise<WPTour[]> {
+export async function getToursByCategory(
+  categoryId: number,
+  params: WPApiParams = {},
+  lang?: string
+): Promise<WPTour[]> {
   return fetchAPI('/tour', {
     tour_category: categoryId,
     _embed: true,
+    ...(lang && { lang }),
     ...params,
   });
 }
@@ -367,23 +380,81 @@ export async function getToursByCategory(categoryId: number, params: WPApiParams
 /**
  * Get tours by category slug
  */
-export async function getToursByCategorySlug(slug: string, params: WPApiParams = {}): Promise<WPTour[]> {
+export async function getToursByCategorySlug(
+  slug: string,
+  params: WPApiParams = {},
+  lang?: string
+): Promise<WPTour[]> {
   const category = await getTourCategoryBySlug(slug);
   if (!category) {
     return [];
   }
-  return getToursByCategory(category.id, params);
+  return getToursByCategory(category.id, params, lang);
 }
 
 /**
  * Get tours by tag
  */
-export async function getToursByTag(tagId: number, params: WPApiParams = {}): Promise<WPTour[]> {
+export async function getToursByTag(tagId: number, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
   return fetchAPI('/tour', {
     tour_tag: tagId,
     _embed: true,
+    ...(lang && { lang }),
     ...params,
   });
+}
+
+/**
+ * Get tours by dedicated Tour Type term ID (taxonomy: tour_type, REST base: tour-type)
+ */
+export async function getToursByTourType(typeId: number, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
+  return fetchAPI('/tour', {
+    'tour-type': typeId,
+    _embed: true,
+    ...(lang && { lang }),
+    ...params,
+  });
+}
+
+/**
+ * Get tours by tag slug
+ */
+export async function getToursByTagSlug(slug: string, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
+  const tag = await getTourTagBySlug(slug);
+  if (!tag) {
+    return [];
+  }
+  return getToursByTag(tag.id, params, lang);
+}
+
+/**
+ * Get tours by Tour Type slug (dedicated taxonomy)
+ */
+export async function getToursByTourTypeSlug(slug: string, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
+  const type = await getTourTypeBySlug(slug);
+  if (!type) return [];
+  return getToursByTourType(type.id, params, lang);
+}
+
+/**
+ * Get tours by dedicated Duration term ID (taxonomy: tour_duration, REST base: tour-duration)
+ */
+export async function getToursByTourDuration(durationId: number, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
+  return fetchAPI('/tour', {
+    'tour-duration': durationId,
+    _embed: true,
+    ...(lang && { lang }),
+    ...params,
+  });
+}
+
+/**
+ * Get tours by Duration slug (dedicated taxonomy)
+ */
+export async function getToursByTourDurationSlug(slug: string, params: WPApiParams = {}, lang?: string): Promise<WPTour[]> {
+  const duration = await getTourDurationBySlug(slug);
+  if (!duration) return [];
+  return getToursByTourDuration(duration.id, params, lang);
 }
 
 /**
@@ -428,6 +499,36 @@ export async function getTourTagBySlug(slug: string): Promise<WPTourTag | null> 
 }
 
 /**
+ * Get all tour types (dedicated taxonomy)
+ */
+export async function getTourTypes(params: WPApiParams = {}): Promise<WPTourType[]> {
+  return fetchAPI('/tour-type', params);
+}
+
+/**
+ * Get a single tour type by slug (dedicated taxonomy)
+ */
+export async function getTourTypeBySlug(slug: string): Promise<WPTourType | null> {
+  const types = await fetchAPI('/tour-type', { slug });
+  return types[0] || null;
+}
+
+/**
+ * Get all tour durations (dedicated taxonomy)
+ */
+export async function getTourDurations(params: WPApiParams = {}): Promise<WPTourDuration[]> {
+  return fetchAPI('/tour-duration', params);
+}
+
+/**
+ * Get a single tour duration by slug (dedicated taxonomy)
+ */
+export async function getTourDurationBySlug(slug: string): Promise<WPTourDuration | null> {
+  const durations = await fetchAPI('/tour-duration', { slug });
+  return durations[0] || null;
+}
+
+/**
  * Get all tour activities
  */
 export async function getTourActivities(params: WPApiParams = {}): Promise<WPTourActivity[]> {
@@ -447,6 +548,36 @@ export async function getTourActivityBySlug(slug: string): Promise<WPTourActivit
  */
 export async function getTourDestinations(params: WPApiParams = {}): Promise<WPTourDestination[]> {
   return fetchAPI('/tour-destination', params);
+}
+
+/**
+ * Get all tour destination terms (handles WP REST pagination limit of 100/page).
+ *
+ * This is used for the mega-menu so we don't silently miss terms when the
+ * destination taxonomy grows beyond 100 terms.
+ */
+export async function getAllTourDestinations(
+  params: WPApiParams = {},
+  opts: { maxPages?: number } = {}
+): Promise<WPTourDestination[]> {
+  const perPage = Math.min(Number(params.per_page) || 100, 100);
+  const maxPages = Math.max(1, opts.maxPages ?? 20);
+
+  const baseParams: WPApiParams = { ...params, per_page: perPage };
+  delete (baseParams as Record<string, unknown>).page;
+
+  const all: WPTourDestination[] = [];
+
+  for (let page = 1; page <= maxPages; page++) {
+    const batch = await fetchAPI('/tour-destination', { ...baseParams, page });
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all.push(...(batch as WPTourDestination[]));
+    if (batch.length < perPage) break;
+  }
+
+  const byId = new Map<number, WPTourDestination>();
+  for (const term of all) byId.set(term.id, term);
+  return Array.from(byId.values());
 }
 
 /**
@@ -506,6 +637,17 @@ export async function getTourDestinationBySlug(slug: string, lang?: string): Pro
 }
 
 /**
+ * Resolve a tour destination term ID by slug.
+ *
+ * Use this instead of `getTourDestinationBySlug(slug, lang)` when you only need the ID,
+ * to avoid triggering extra language-specific count queries.
+ */
+export async function getTourDestinationIdBySlug(slug: string): Promise<number | null> {
+  const destinations = await fetchAPI('/tour-destination', { slug });
+  return destinations[0]?.id ?? null;
+}
+
+/**
  * Get related destinations for a given destination slug
  * Maps common location relationships (e.g., Canada includes all provinces/regions)
  * 
@@ -533,15 +675,8 @@ export async function getRelatedDestinations(slug: string): Promise<WPTourDestin
     return [];
   }
   
-  const destinations: WPTourDestination[] = [];
-  for (const relatedSlug of slugs) {
-    const dest = await getTourDestinationBySlug(relatedSlug);
-    if (dest) {
-      destinations.push(dest);
-    }
-  }
-  
-  return destinations;
+  const destinations = await Promise.all(slugs.map((relatedSlug) => getTourDestinationBySlug(relatedSlug)));
+  return destinations.filter((d): d is WPTourDestination => d != null);
 }
 
 /**
@@ -721,7 +856,7 @@ export async function searchToursAdvanced(options: {
   // Add destination filter if provided
   if (destination) {
     const destId = typeof destination === 'string' 
-      ? (await getTourDestinationBySlug(destination, lang))?.id 
+      ? await getTourDestinationIdBySlug(destination)
       : destination;
     if (destId) {
       url.searchParams.append('tour-destination', destId.toString());
@@ -733,7 +868,7 @@ export async function searchToursAdvanced(options: {
     const destIds = await Promise.all(
       destinations.map(async (dest) => {
         if (typeof dest === 'string') {
-          return (await getTourDestinationBySlug(dest, lang))?.id;
+          return await getTourDestinationIdBySlug(dest);
         }
         return dest;
       })
@@ -869,7 +1004,7 @@ export async function getFeaturedTours(limit: number = 6, lang?: string): Promis
 
 /**
  * Get tours by type using keyword and tag matching
- * Supports: Attraction Tickets, Package Tours, Cruises
+ * Supports: Tickets & Passes, Land Tours, Cruises & Expeditions
  * 
  * @param type - Tour type ('attraction-tickets', 'land-tours', 'cruises')
  * @param params - Additional API parameters
@@ -944,7 +1079,7 @@ export async function getToursByType(type: string, params: WPApiParams = {}, lan
   }
 
   // Fallback: search by keywords
-  let allTours: WPTour[] = [];
+  const allTours: WPTour[] = [];
   const seen = new Set<number>();
 
   for (const keyword of config.keywords) {
@@ -993,17 +1128,17 @@ export function getTourTypeInfo(type: string): {
 } | null {
   const types: Record<string, { label: string; description: string; slug: string }> = {
     'attraction-tickets': {
-      label: 'Attraction Tickets',
-      description: 'Admission and activity tickets for popular attractions',
+      label: 'Tickets & Passes',
+      description: 'Attraction admissions, tickets, and passes (no packaged itinerary)',
       slug: 'attraction-tickets',
     },
     'land-tours': {
-      label: 'Package Tours',
-      description: 'Multi-day package tours and vacation packages',
+      label: 'Land Tours',
+      description: 'Guided tours and itineraries on land (day trips and multi-day tours)',
       slug: 'land-tours',
     },
     'cruises': {
-      label: 'Cruises',
+      label: 'Cruises & Expeditions',
       description: 'River cruises, ocean cruises, and expedition cruises',
       slug: 'cruises',
     },

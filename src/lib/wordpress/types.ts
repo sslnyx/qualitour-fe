@@ -164,6 +164,26 @@ export interface WPTourTag {
   taxonomy: 'tour_tag';
 }
 
+export interface WPTourType {
+  id: number;
+  count: number;
+  description: string;
+  link: string;
+  name: string;
+  slug: string;
+  taxonomy: 'tour_type';
+}
+
+export interface WPTourDuration {
+  id: number;
+  count: number;
+  description: string;
+  link: string;
+  name: string;
+  slug: string;
+  taxonomy: 'tour_duration';
+}
+
 export interface WPTourImageSizes {
   thumbnail?: {
     url: string;
@@ -320,6 +340,8 @@ export interface WPTour {
   meta: any[];
   tour_category: number[];
   tour_tag: number[];
+  tour_duration?: number[];
+  tour_type?: number[];
   'tour-activity'?: number[];
   'tour-destination'?: number[];
   'tour-activity_exclude'?: number[];
@@ -363,6 +385,8 @@ export interface WPApiParams {
   tour_category_exclude?: number | number[];
   tour_tag?: number | number[];
   tour_tag_exclude?: number | number[];
+  'tour-duration'?: number | number[];
+  'tour-type'?: number | number[];
   'tour-activity'?: number | number[];
   'tour-activity_exclude'?: number | number[];
   'tour-destination'?: number | number[];

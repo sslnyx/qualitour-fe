@@ -52,7 +52,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
-        {/* Google Material Symbols Outlined */}
+        {/* Google Material Icons (for `material-icons`) */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+        {/* Google Material Symbols Outlined (for `material-symbols-outlined`) */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"

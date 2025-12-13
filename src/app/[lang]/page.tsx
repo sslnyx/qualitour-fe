@@ -5,11 +5,14 @@ import { formatDate } from '@/lib/utils';
 import FeaturedToursCarousel from '@/components/FeaturedToursCarousel';
 import type { Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
+import { getLocalePrefix } from '@/i18n/config';
+import TransferBookingModalButton from '@/components/TransferBookingModalButton';
 import HeroBackground from '@/assets/dimitar-donovski-h9Zr7Hq8yaA-unsplash-scaled-e1698877564378.webp';
 
 export default async function Home({ params }: { params: Promise<{ lang: Locale }> }) {
   const { lang } = await params;
   const dict = await getDictionary(lang);
+  const localePrefix = getLocalePrefix(lang);
   
   let posts: WPPost[] = [];
   let tours: WPTour[] = [];
@@ -151,7 +154,11 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
             <h3 className="text-text-heading" style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '0px', textTransform: 'none' }}>
               {dict.navigation.privateTransfers}
             </h3>
-            <p className="text-gray-400 italic mt-2">Small group transfers for up to 14 people</p>
+            <p className="text-gray-400 italic mt-2">
+              {lang === 'zh'
+                ? '小团体私人接送（最多可容纳 14 人）'
+                : 'We specialize in small group private transfers which may accommodate up to 14 people'}
+            </p>
           </div>
 
           <div style={{ paddingTop: '30px' }}></div>
@@ -164,15 +171,15 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
                 to<br />
                 Whistler
               </h3>
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-blue-300 flex items-center justify-center">
-                  <i className="fa fa-mountain text-white text-2xl"></i>
-                </div>
+              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
+                {lang === 'zh' ? '每车 $465 起' : 'From $465 (per vehicle)'}
               </div>
-              <div className="mb-6">
-                <div className="text-[#f7941e] font-bold" style={{ fontSize: '48px' }}>$465</div>
-                <div className="text-gray-500 text-sm">per vehicle</div>
-              </div>
+              <TransferBookingModalButton
+                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
+                activityId="18"
+                localePrefix={localePrefix}
+                lang={lang}
+              />
             </div>
 
             {/* Transfer 2 */}
@@ -182,15 +189,15 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
                 to<br />
                 Whistler
               </h3>
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-green-300 flex items-center justify-center">
-                  <i className="fa fa-building text-white text-2xl"></i>
-                </div>
+              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
+                {lang === 'zh' ? '每车 $435 起' : 'From $435 (per vehicle)'}
               </div>
-              <div className="mb-6">
-                <div className="text-[#f7941e] font-bold" style={{ fontSize: '48px' }}>$435</div>
-                <div className="text-gray-500 text-sm">per vehicle</div>
-              </div>
+              <TransferBookingModalButton
+                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
+                activityId="16"
+                localePrefix={localePrefix}
+                lang={lang}
+              />
             </div>
 
             {/* Transfer 3 */}
@@ -200,22 +207,22 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
                 to<br />
                 YVR Airport / Greater Vancouver
               </h3>
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-purple-300 flex items-center justify-center">
-                  <i className="fa fa-arrow-left text-white text-2xl"></i>
-                </div>
+              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
+                {lang === 'zh' ? '每车 $435 起' : 'From $435 (per vehicle)'}
               </div>
-              <div className="mb-6">
-                <div className="text-[#f7941e] font-bold" style={{ fontSize: '48px' }}>$435</div>
-                <div className="text-gray-500 text-sm">per vehicle</div>
-              </div>
+              <TransferBookingModalButton
+                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
+                activityId="20"
+                localePrefix={localePrefix}
+                lang={lang}
+              />
             </div>
           </div>
 
           <div className="text-center mt-8">
             <Link 
               className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] transition-colors font-medium"
-              href={`/${lang}/private-transfers/`}
+              href={`${localePrefix}/private-transfers`}
               style={{ fontSize: '15px' }}
             >
               View All Transfers <i className="fa fa-arrow-right"></i>

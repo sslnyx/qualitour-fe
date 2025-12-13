@@ -6,64 +6,67 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLocalePrefix } from '@/i18n/config';
 import type { Locale } from '@/i18n/config';
 import Link from "next/link";
-import { WPTourActivity, WPTourDestination } from '@/lib/wordpress/types';
+import { WPTourActivity, WPTourDestination, WPTourDuration, WPTourType } from '@/lib/wordpress/types';
 import { organizeDestinations } from '@/lib/navigation-mapper';
 import { useRouter } from 'next/navigation';
+import { decodeHtmlEntities } from '@/lib/decodeHtmlEntities';
 
 // Brand color
 const brandOrange = "#f7941e";
 
-// Mapping of duration slugs to i18n keys
-const durationSlugToKey: { [key: string]: string } = {
-  'single-day': 'singleDayTickets',
-  'short-breaks': 'shortBreaks',
-  'weeklong': 'weeklong',
-  'extended-journeys': 'extendedJourneys',
-  'grand-voyages': 'grandVoyages',
+type NavDict = {
+  navigation?: Record<string, string>;
+  common?: Record<string, string>;
 };
 
-// Mapping of tour type slugs to i18n keys
-const tourTypeSlugToKey: { [key: string]: string } = {
-  'attraction-tickets': 'attractionTickets',
-  'land-tours': 'packageTours',
-  'cruises': 'cruises',
+type TreeNode<T> = T & { children: Array<TreeNode<T>> };
+
+type TermLike = {
+  id: number;
+  parent: number;
 };
 
 interface SiteNavProps {
   lang: Locale;
   activities?: WPTourActivity[];
   destinations?: WPTourDestination[];
-  dict?: any; // Dictionary with translations
+  durations?: WPTourDuration[];
+  types?: WPTourType[];
+  dict?: NavDict;
 }
 
-function buildTree(items: any[]) {
-  if (!items) return [];
-  const map = new Map();
-  const roots: any[] = [];
-  // Sort by name
-  const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name));
-  
-  sortedItems.forEach(item => {
+function buildTree<T extends TermLike>(items: T[] | undefined): Array<TreeNode<T>> {
+  if (!items || items.length === 0) return [];
+  const map = new Map<number, TreeNode<T>>();
+  const roots: Array<TreeNode<T>> = [];
+
+  // Preserve incoming term order (WordPress already returns terms ordered by name).
+  // Avoid locale-dependent sorting here to prevent SSR/CSR ordering differences
+  // that can cause hydration mismatches.
+  items.forEach((item) => {
     map.set(item.id, { ...item, children: [] });
   });
-  
-  sortedItems.forEach(item => {
+
+  items.forEach((item) => {
     if (item.parent !== 0 && map.has(item.parent)) {
-      map.get(item.parent).children.push(map.get(item.id));
+      map.get(item.parent)!.children.push(map.get(item.id)!);
     } else {
-      roots.push(map.get(item.id));
+      roots.push(map.get(item.id)!);
     }
   });
   return roots;
 }
 
-export default function SiteNav({ lang, activities = [], destinations = [], dict }: SiteNavProps) {
+export default function SiteNav({ lang, activities = [], destinations = [], durations = [], types = [], dict }: SiteNavProps) {
   const router = useRouter();
   const localePrefix = getLocalePrefix(lang);
   const [megaOpen, setMegaOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
+  const [servicesMobileOpen, setServicesMobileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mouseOutDelay = 250;
-  const mouseOutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mouseOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const servicesMouseOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const prefetchOnIntent = useCallback(
     (href: string) => {
@@ -91,35 +94,75 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
   });
 
   // Get translation function
-  const t = (key: string, defaultValue: string = key) => {
-    return dict?.navigation?.[key] || defaultValue;
-  };
+  const t = (key: string, defaultValue: string = key) => dict?.navigation?.[key] || defaultValue;
+  const tc = (key: string, defaultValue: string = key) => dict?.common?.[key] || defaultValue;
 
-  // Build tour type links with proper translations
-  const tourTypeLinks = [
-    { label: t('attractionTickets', 'Attraction Tickets'), slug: 'attraction-tickets', type: 'type' },
-    { label: t('packageTours', 'Package Tours'), slug: 'land-tours', type: 'type' },
-    { label: t('cruises', 'Cruises'), slug: 'cruises', type: 'type' },
-  ];
+  const TOUR_TYPE_SLUGS = ['attraction-tickets', 'land-tours', 'cruises'] as const;
 
-  // Build duration links with proper translations
-  const durationLinks = [
-    { label: t('singleDayTickets', 'Single-Day Tickets'), slug: 'single-day' },
-    { label: t('shortBreaks', '1–4 Days (Short Breaks)'), slug: 'short-breaks' },
-    { label: t('weeklong', '5–8 Days (Weeklong)'), slug: 'weeklong' },
-    { label: t('extendedJourneys', '9-29 Days (Extended Journeys)'), slug: 'extended-journeys' },
-    { label: t('grandVoyages', '30+ Days (Grand Voyages)'), slug: 'grand-voyages' },
-  ];
+  const typesBySlug = new Map(types.map((term) => [term.slug, term]));
 
-  // Use the mapper to organize flat WP data into our desired hierarchy
-  const organizedDestinations = organizeDestinations(destinations);
-  const destinationTree = buildTree(organizedDestinations);
-  const activityTree = buildTree(activities);
+  const tourTypeLinks = TOUR_TYPE_SLUGS.map((slug) => {
+    const term = typesBySlug.get(slug);
+    const fallbackLabel =
+      slug === 'attraction-tickets'
+        ? t('attractionTickets', 'Tickets & Passes')
+        : slug === 'land-tours'
+          ? t('packageTours', 'Land Tours')
+          : t('cruises', 'Cruises & Expeditions');
+
+    return {
+      label: decodeHtmlEntities(term?.name || fallbackLabel),
+      slug,
+      type: 'type',
+    };
+  });
+
+  const DURATION_BUCKET_SLUGS = [
+    'single-day',
+    'short-breaks',
+    'weeklong',
+    'extended-journeys',
+    'grand-voyages',
+  ] as const;
+
+  const durationsBySlug = new Map(durations.map((term) => [term.slug, term]));
+
+  const durationLinks = DURATION_BUCKET_SLUGS.map((slug) => {
+    const term = durationsBySlug.get(slug);
+    const fallbackLabel =
+      slug === 'single-day'
+        ? t('singleDayTickets', 'Single-Day Tickets')
+        : slug === 'short-breaks'
+          ? t('shortBreaks', '1–4 Days (Short Breaks)')
+          : slug === 'weeklong'
+            ? t('weeklong', '5–8 Days (Weeklong)')
+            : slug === 'extended-journeys'
+              ? t('extendedJourneys', '9-29 Days (Extended Journeys)')
+              : t('grandVoyages', '30+ Days (Grand Voyages)');
+
+    return { label: decodeHtmlEntities(term?.name || fallbackLabel), slug };
+  });
+
+  // Build the destination tree from WP term parent relationships,
+  // with a conservative fallback mapping to prevent "floating" items.
+  const destinationTree = buildTree<WPTourDestination>(organizeDestinations(destinations));
+  const activityTree = buildTree<WPTourActivity>(activities);
 
   // Helper to close megamenu when a link is clicked
   const handleMegamenuLinkClick = () => {
     setMegaOpen(false);
   };
+
+  const serviceLinks = [
+    {
+      label: t('privateTransfers', 'Private Transfers'),
+      href: `${localePrefix}/private-transfers`,
+    },
+    {
+      label: t('chinaVisa', 'China Visa'),
+      href: `${localePrefix}/visa`,
+    },
+  ];
 
   return (
     <nav className="bg-white border-b border-gray-200 w-full z-50">
@@ -151,8 +194,44 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
               className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
               {...intentPrefetchProps(localePrefix + '/')}
             >
-              Home
+              {tc('home', 'Home')}
             </Link>
+          </li>
+          <li
+            className="relative"
+            onMouseEnter={() => {
+              if (servicesMouseOutTimerRef.current) {
+                clearTimeout(servicesMouseOutTimerRef.current);
+                servicesMouseOutTimerRef.current = null;
+              }
+              setServicesOpen(true);
+            }}
+            onMouseLeave={() => {
+              servicesMouseOutTimerRef.current = setTimeout(() => {
+                setServicesOpen(false);
+              }, mouseOutDelay);
+            }}
+          >
+            <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
+              {t('services', 'Services')}{' '}
+              <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+            </button>
+
+            {servicesOpen && (
+              <div className="absolute left-0 top-full mt-1 min-w-[220px] bg-white shadow-lg border border-gray-200 rounded-md py-2">
+                {serviceLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    prefetch={false}
+                    href={item.href}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:text-[#f7941e] hover:bg-gray-50"
+                    {...intentPrefetchProps(item.href)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </li>
           <li
             className="relative"
@@ -170,7 +249,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
             }}
           >
             <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
-              Tours <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+              {t('tours', 'Tours')} <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
             </button>
             {/* Mega Menu */}
             {megaOpen && (
@@ -227,9 +306,9 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                   </div>
                   {/* By Destination - Dynamic Grid */}
                   <div className="flex-2 px-4">
-                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>By Destination</h4>
+                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('destinations', 'By Destination')}</h4>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                      {destinationTree.map((dest: any) => (
+                      {destinationTree.map((dest) => (
                         <div key={dest.id} className="break-inside-avoid mb-2">
                           {dest.children.length > 0 ? (
                             <>
@@ -240,11 +319,11 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                                 className="font-bold text-gray-800 hover:text-[#f7941e] mb-1 flex items-center"
                                 {...intentPrefetchProps(`${localePrefix}/tours/destination/${dest.slug}`)}
                               >
-                                {dest.name}
+                                {decodeHtmlEntities(dest.name)}
                                 <span className="material-symbols-outlined ml-1 text-[16px]">chevron_right</span>
                               </Link>
                               <ul className="space-y-1 pl-3 border-l-2 border-gray-100">
-                                {dest.children.map((child: any) => (
+                                {dest.children.map((child) => (
                                   <li key={child.id}>
                                     <Link
                                       prefetch={false}
@@ -253,12 +332,12 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                                       className="text-sm text-gray-600 hover:text-[#f7941e] block py-0.5"
                                       {...intentPrefetchProps(`${localePrefix}/tours/destination/${child.slug}`)}
                                     >
-                                      {child.name}
+                                      {decodeHtmlEntities(child.name)}
                                     </Link>
                                     {/* Third Level (Cities/Regions) */}
                                     {child.children && child.children.length > 0 && (
                                       <ul className="pl-3 mt-0.5 space-y-0.5 border-l border-gray-200 ml-1">
-                                        {child.children.map((grandchild: any) => (
+                                          {child.children.map((grandchild) => (
                                           <li key={grandchild.id}>
                                             <Link
                                               prefetch={false}
@@ -267,7 +346,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                                               className="text-xs text-gray-500 hover:text-[#f7941e] block py-0.5"
                                               {...intentPrefetchProps(`${localePrefix}/tours/destination/${grandchild.slug}`)}
                                             >
-                                              {grandchild.name}
+                                              {decodeHtmlEntities(grandchild.name)}
                                             </Link>
                                           </li>
                                         ))}
@@ -285,7 +364,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                               className="font-medium text-gray-700 hover:text-[#f7941e] block py-1"
                               {...intentPrefetchProps(`${localePrefix}/tours/destination/${dest.slug}`)}
                             >
-                              {dest.name}
+                              {decodeHtmlEntities(dest.name)}
                             </Link>
                           )}
                         </div>
@@ -296,7 +375,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                   <div className="flex-1 px-4">
                     <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('experiences', 'By Experience')}</h4>
                     <ul className="space-y-1">
-                      {activityTree.map((activity: any) => (
+                      {activityTree.map((activity) => (
                         <li key={activity.id}>
                           <Link
                             prefetch={false}
@@ -305,7 +384,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                             className="hover:text-[#f7941e]"
                             {...intentPrefetchProps(localePrefix + `/tours/activity/${activity.slug}`)}
                           >
-                            {activity.name}
+                            {decodeHtmlEntities(activity.name)}
                           </Link>
                         </li>
                       ))}
@@ -341,7 +420,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
               className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
               {...intentPrefetchProps(localePrefix + '/about-us')}
             >
-              About
+              {t('aboutUs', 'About')}
             </Link>
           </li>
           <li>
@@ -351,7 +430,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
               className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
               {...intentPrefetchProps(localePrefix + '/contact')}
             >
-              Contact
+              {t('contactUs', 'Contact')}
             </Link>
           </li>
           <li>
@@ -361,7 +440,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
               className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
               {...intentPrefetchProps(localePrefix + '/faq')}
             >
-              FAQ
+              {t('faq', 'FAQ')}
             </Link>
           </li>
         </ul>
@@ -380,15 +459,37 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-200 px-4 py-2">
           <ul className="space-y-2">
-            <li><Link prefetch={false} href={localePrefix + '/'} className="block py-2 text-gray-700 font-medium">Home</Link></li>
+            <li><Link prefetch={false} href={localePrefix + '/'} className="block py-2 text-gray-700 font-medium">{tc('home', 'Home')}</Link></li>
+            <li>
+              <button
+                className="block w-full text-left py-2 text-gray-700 font-medium"
+                onClick={() => setServicesMobileOpen(!servicesMobileOpen)}
+              >
+                {t('services', 'Services')}{' '}
+                <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+              </button>
+              {servicesMobileOpen && (
+                <div className="bg-gray-50 border rounded mt-2 p-2">
+                  <ul className="ml-2">
+                    {serviceLinks.map((item) => (
+                      <li key={item.href}>
+                        <Link prefetch={false} href={item.href} onClick={() => setMobileOpen(false)}>
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </li>
             <li>
               <button className="block w-full text-left py-2 text-gray-700 font-medium" onClick={() => setMegaOpen(!megaOpen)}>
-                Tours <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+                {t('tours', 'Tours')} <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
               </button>
               {megaOpen && (
                 <div className="bg-gray-50 border rounded mt-2 p-2">
                   <div className="mb-2">
-                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>By Tour Type</span>
+                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('tourTypes', 'By Tour Type')}</span>
                     <ul className="ml-2">
                       {tourTypeLinks.map((link) => (
                         <li key={link.slug}>
@@ -397,22 +498,22 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                           </Link>
                         </li>
                       ))}
-                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">By Duration</Link></li>
-                      <li><Link prefetch={false} href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">Search All Tours</Link></li>
-                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold">Featured Tours</Link></li>
+                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">{t('byDuration', 'By Duration')}</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">{t('searchAllTours', 'Search All Tours')}</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold">{t('featuredTours', 'Featured Tours')}</Link></li>
                     </ul>
                   </div>
                   <div className="mb-2">
                     <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('destinations', 'By Destination')}</span>
                     <ul className="ml-2">
-                      {destinationTree.map((dest: any) => (
+                      {destinationTree.map((dest) => (
                         <li key={dest.id}>
-                          <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`}>{dest.name}</Link>
+                          <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`}>{decodeHtmlEntities(dest.name)}</Link>
                           {dest.children.length > 0 && (
                             <ul className="ml-2 border-l pl-2">
-                              {dest.children.map((child: any) => (
+                              {dest.children.map((child) => (
                                 <li key={child.id}>
-                                  <Link prefetch={false} href={`${localePrefix}/tours/destination/${child.slug}`}>{child.name}</Link>
+                                  <Link prefetch={false} href={`${localePrefix}/tours/destination/${child.slug}`}>{decodeHtmlEntities(child.name)}</Link>
                                 </li>
                               ))}
                             </ul>
@@ -424,12 +525,12 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
                   <div className="mb-2">
                     <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('experiences', 'By Experience')}</span>
                     <ul className="ml-2">
-                      {activityTree.map((activity: any) => (
+                      {activityTree.map((activity) => (
                         <li key={activity.id}>
                           <Link prefetch={false} href={`${localePrefix}/tours/activity/${activity.slug}`} onClick={() => setMobileOpen(false)}>{activity.name}</Link>
                           {activity.children && activity.children.length > 0 && (
                             <ul className="ml-2 border-l pl-2">
-                              {activity.children.map((child: any) => (
+                              {activity.children.map((child) => (
                                 <li key={child.id}>
                                   <Link prefetch={false} href={`${localePrefix}/tours/activity/${child.slug}`} onClick={() => setMobileOpen(false)}>{child.name}</Link>
                                 </li>

@@ -316,6 +316,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
                 tour._embedded?.['wp:term']?.[2]?.[0]?.slug || ''
               }
               limit={5}
+              lang={lang}
             />
           </div>
         </div>

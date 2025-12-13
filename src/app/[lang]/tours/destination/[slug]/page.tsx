@@ -1,4 +1,4 @@
-import { getTourDestinationBySlug, searchToursAdvanced, getRelatedDestinations, getDestinationKeywords } from '@/lib/wordpress';
+import { getTourDestinationBySlug, searchToursAdvanced } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
 import { type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
@@ -11,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug, lang } = await params;
-  const term = await getTourDestinationBySlug(slug, lang);
+  const term = await getTourDestinationBySlug(slug);
   
   // Fallback title if term not found
   const name = term ? term.name : slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -30,7 +30,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
   const perPage = 12;
 
   // Get the destination term for metadata with language-specific count
-  let term = await getTourDestinationBySlug(slug, lang);
+  let term = await getTourDestinationBySlug(slug);
   
   // If term doesn't exist in WP, create a virtual one for display
   if (!term) {
@@ -53,77 +53,22 @@ export default async function DestinationPage({ params, searchParams }: Props) {
   let totalPages = 0;
   let totalTourCount = 0;
 
-  // Use searchToursAdvanced to fetch tours for this destination
+  // Use taxonomy-only filtering to fetch tours for this destination.
+  // WP assignments include parent-chain terms, so continent/country pages work without
+  // expanding children or keyword fallbacks.
   try {
-    // Get related destinations to include in search
-    const relatedDestinations = await getRelatedDestinations(slug);
-    const allDestinations = [slug, ...relatedDestinations.map(d => d.slug)];
-    
-    // Verify at least one destination exists (either the slug or a related one)
-    const validDestinations: string[] = [];
-    for (const dest of allDestinations) {
-      const destTerm = await getTourDestinationBySlug(dest, lang);
-      if (destTerm) {
-        validDestinations.push(dest);
-      }
-    }
-    
-    // If we have valid destinations from taxonomy, use them
-    if (validDestinations.length > 0) {
-      const result = await searchToursAdvanced({
-        destinations: validDestinations,
-        page: currentPage,
-        per_page: perPage,
-        lang
-      });
-      
-      tours = result.tours;
-      totalTourCount = result.total;
-      totalPages = result.totalPages;
-      
-      console.log(`[DestinationPage] Slug: ${slug}, Valid destinations: [${validDestinations.join(', ')}], Related: [${relatedDestinations.map(d => d.name).join(', ')}], Found ${totalTourCount} tours (taxonomy-based)`);
-    }
-    
-    // Fallback: If taxonomy search returned no results, use keyword-based search
-    if (tours.length === 0) {
-      const keywords = getDestinationKeywords(slug);
-      console.log(`[DestinationPage] Keyword fallback triggered for '${slug}', keywords available: ${keywords.length}`);
-      
-      if (keywords.length > 0) {
-        // Search using multiple keywords (OR query - search each keyword separately and deduplicate)
-        const seenIds = new Set<number>();
-        const allTours: any[] = [];
-        
-        for (const keyword of keywords) {
-          const result = await searchToursAdvanced({
-            query: keyword,
-            page: 1,
-            per_page: 100, // Get max per keyword
-            lang
-          });
-          
-          if (result.tours && result.tours.length > 0) {
-            for (const tour of result.tours) {
-              if (!seenIds.has(tour.id)) {
-                seenIds.add(tour.id);
-                allTours.push(tour);
-              }
-            }
-          }
-        }
-        
-        // Apply pagination to the combined results
-        const startIndex = (currentPage - 1) * perPage;
-        const endIndex = startIndex + perPage;
-        tours = allTours.slice(startIndex, endIndex);
-        totalTourCount = allTours.length;
-        totalPages = Math.ceil(totalTourCount / perPage);
-        
-        console.log(`[DestinationPage] Slug: ${slug}, Using keyword search: [${keywords.join(', ')}], Found ${totalTourCount} tours (keyword-based, combined from ${keywords.length} keywords)`);
-      } else {
-        console.warn(`[DestinationPage] No valid destinations or keywords found for slug: ${slug}`);
-      }
-    }
+    const result = await searchToursAdvanced({
+      destination: slug,
+      page: currentPage,
+      per_page: perPage,
+      lang,
+    });
+
+    tours = result.tours;
+    totalTourCount = result.total;
+    totalPages = result.totalPages;
+
+    console.log(`[DestinationPage] Slug: ${slug}, Found ${totalTourCount} tours (taxonomy-only)`);
   } catch (e) {
     console.error('Error fetching tours:', e);
   }

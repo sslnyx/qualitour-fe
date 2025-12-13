@@ -33,7 +33,6 @@ export default function Footer({ lang }: { lang: Locale }) {
                   width={60}
                   height={60}
                   className="w-[60px] h-auto"
-                  style={{ width: 'auto', height: 'auto' }}
                 />
               </Link>
             </div>

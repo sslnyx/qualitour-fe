@@ -15,12 +15,14 @@ import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { GoogleReview, PlaceDetails } from '@/lib/wordpress/types';
+import TransferReviewsCarousel from '@/components/TransferReviewsCarousel';
 
 interface TourReviewsProps {
   tourTitle?: string;
   tourSlug?: string;
   tourDestination?: string;
   limit?: number;
+  lang?: 'en' | 'zh' | string;
 }
 
 /**
@@ -629,6 +631,7 @@ export default function TourReviews({
   tourTitle,
   tourDestination,
   limit = 5,
+  lang = 'en',
 }: TourReviewsProps) {
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -718,63 +721,14 @@ export default function TourReviews({
           )}
         </div>
 
-        {/* Reviews grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-          {filteredReviews.map((review, index) => (
-            <div
-              key={index}
-              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow"
-            >
-              {/* Star rating and date */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex text-yellow-400 text-sm gap-0.5">
-                  {Array.from({ length: review.rating }).map((_, i) => (
-                    <span key={i}>★</span>
-                  ))}
-                  {Array.from({ length: 5 - review.rating }).map((_, i) => (
-                    <span key={`empty-${i}`} className="text-gray-300">★</span>
-                  ))}
-                </div>
-                <span className="text-gray-500 text-xs whitespace-nowrap ml-2">
-                  {review.relative_time_description}
-                </span>
-              </div>
-
-              {/* Reviewer info */}
-              <div className="flex items-center gap-3 mb-4">
-                {review.profile_photo_url && (
-                  <Image
-                    src={review.profile_photo_url}
-                    alt={review.author_name}
-                    width={40}
-                    height={40}
-                    className="rounded-full object-cover shrink-0"
-                  />
-                )}
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {review.author_name}
-                  </p>
-                </div>
-              </div>
-
-              {/* Review photos slider */}
-              {review.images && review.images.length > 0 && (
-                <ReviewPhotoSlider images={review.images} authorName={review.author_name} />
-              )}
-
-              {/* Review text */}
-              <p className="text-gray-700 text-sm leading-relaxed mt-4">
-                {review.text}
-              </p>
-            </div>
-          ))}
-        </div>
+        {/* Best-match reviews slider */}
+        <TransferReviewsCarousel reviews={filteredReviews} lang={lang} />
 
         {/* View all reviews button */}
-        {filteredReviews.length > 0 && placeDetails.reviews && placeDetails.reviews.length > (limit || 5) && (
+        {placeDetails.reviews && placeDetails.reviews.length > filteredReviews.length && (
           <div className="text-center pt-4">
             <button
+              type="button"
               onClick={() => setShowAllReviewsModal(true)}
               className="inline-block px-6 py-2 border-2 border-[#f7941e] text-[#f7941e] hover:bg-orange-50 rounded-lg font-semibold transition-colors"
             >
