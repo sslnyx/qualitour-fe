@@ -1,6 +1,11 @@
 import TestGoogleReviews from '@/components/TestGoogleReviews';
+import { i18n } from '@/i18n/config';
 
-export const dynamic = 'force-static';
+export const runtime = 'edge';
+
+export async function generateStaticParams() {
+  return i18n.locales.map((locale) => ({ lang: locale }));
+}
 
 export const metadata = {
   title: 'Google Reviews - Qualitour',

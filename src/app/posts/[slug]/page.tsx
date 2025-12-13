@@ -9,7 +9,7 @@ interface PostPageProps {
 }
 
 export const dynamicParams = false;
-export const dynamic = 'force-static';
+export const runtime = 'edge';
 
 export async function generateStaticParams() {
   try {
