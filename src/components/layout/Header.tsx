@@ -7,6 +7,7 @@ import Container from '@/components/ui/Container';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
+import QualitourLogo from '@/assets/Title-logo-rasterisation-optimised.svg';
 
 // Navigation menu structure
 const navigation = [
@@ -83,7 +84,7 @@ export default function Header({ lang }: { lang: Locale }) {
           {/* Logo */}
           <Link href={`${localePrefix}/`} className="flex items-center" style={{ paddingTop: '34px', paddingBottom: '36px' }}>
             <Image 
-              src="http://qualitour.local/wp-content/uploads/2023/11/Title-logo-rasterisation-optimised.svg"
+              src={QualitourLogo}
               alt="Qualitour"
               width={175}
               height={48}

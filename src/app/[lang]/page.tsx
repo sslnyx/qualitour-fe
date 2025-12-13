@@ -5,6 +5,7 @@ import { formatDate } from '@/lib/utils';
 import FeaturedToursCarousel from '@/components/FeaturedToursCarousel';
 import type { Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
+import HeroBackground from '@/assets/dimitar-donovski-h9Zr7Hq8yaA-unsplash-scaled-e1698877564378.webp';
 
 export default async function Home({ params }: { params: Promise<{ lang: Locale }> }) {
   const { lang } = await params;
@@ -47,7 +48,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
       <section
         className="relative bg-cover bg-bottom bg-no-repeat text-white"
         style={{
-          backgroundImage: "url('http://qualitour.local/wp-content/uploads/2023/11/dimitar-donovski-h9Zr7Hq8yaA-unsplash-scaled-e1698877564378.webp')",
+          backgroundImage: `url('${HeroBackground.src}')`,
           paddingTop: '165px',
           paddingBottom: '165px',
         }}
@@ -234,7 +235,11 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
           {toursError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8">
               <p className="font-bold">Error loading tours</p>
-              <p className="text-sm">{toursError}</p>
+              <p className="text-sm">
+                {process.env.NODE_ENV === 'development'
+                  ? toursError
+                  : 'Tours are temporarily unavailable.'}
+              </p>
             </div>
           )}
 

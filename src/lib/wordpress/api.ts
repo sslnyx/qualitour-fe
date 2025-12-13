@@ -124,6 +124,12 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`[API Error Body] ${endpoint}:`, errorBody);
+      if (response.status === 401) {
+        throw new Error(
+          'WordPress API Error: 401 Unauthorized. ' +
+            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+        );
+      }
       throw new Error(`WordPress API Error: ${response.status} ${response.statusText}`);
     }
 
@@ -176,10 +182,19 @@ export async function getPages(params: WPApiParams = {}): Promise<WPPage[]> {
 /**
  * Get a single page by slug
  */
-export async function getPageBySlug(slug: string): Promise<WPPage | null> {
+export async function getPagesByLang(params: WPApiParams = {}, lang?: string): Promise<WPPage[]> {
+  return fetchAPI('/pages', {
+    _embed: true,
+    ...(lang && { lang }),
+    ...params,
+  });
+}
+
+export async function getPageBySlug(slug: string, lang?: string): Promise<WPPage | null> {
   const pages = await fetchAPI('/pages', {
     slug,
     _embed: true,
+    ...(lang && { lang }),
   });
   return pages[0] || null;
 }

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import QualitourLogo from '@/assets/Title-logo-rasterisation-optimised.svg';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLocalePrefix } from '@/i18n/config';
 import type { Locale } from '@/i18n/config';
@@ -100,7 +101,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dict
           {/* Logo */}
           <Link href={localePrefix + '/'} className="flex items-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
             <Image 
-              src="http://qualitour.local/wp-content/uploads/2023/11/Title-logo-rasterisation-optimised.svg"
+              src={QualitourLogo}
               alt="Qualitour"
               width={175}
               height={48}
