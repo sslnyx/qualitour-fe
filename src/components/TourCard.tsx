@@ -16,6 +16,32 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { WPTour } from '@/lib/wordpress';
 
+function normalizeMediaUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  // Some WP fields occasionally contain stray newlines/spaces.
+  return trimmed.replace(/\s+/g, '');
+}
+
+function pickTourImageUrl(tour: WPTour, imageSize: NonNullable<TourCardProps['imageSize']>): string | null {
+  const sizes: Array<NonNullable<TourCardProps['imageSize']>> = [
+    imageSize,
+    'large',
+    'medium',
+    'thumbnail',
+    'full',
+  ];
+
+  for (const size of sizes) {
+    const candidate: unknown = (tour.featured_image_url as any)?.[size];
+    const url = normalizeMediaUrl(candidate) || normalizeMediaUrl((candidate as any)?.url);
+    if (url) return url;
+  }
+
+  return null;
+}
+
 export interface TourCardProps {
   tour: WPTour;
   lang?: string;
@@ -52,12 +78,7 @@ export function TourCard({
   excerptWords = 14,
   imageSize = 'large',
 }: TourCardProps) {
-  // Get image URL based on size preference and clean any whitespace/newlines
-  const rawImageUrl = 
-    tour.featured_image_url?.[imageSize]?.url ||
-    tour.featured_image_url?.large?.url ||
-    tour.featured_image_url?.medium?.url;
-  const imageUrl = rawImageUrl?.trim().replace(/\s+/g, '');
+  const imageUrl = pickTourImageUrl(tour, imageSize);
 
   // Pricing - check for Tourmaster discount
   const price = tour.tour_meta?.['tour-price-text'] || tour.tour_meta?.price;

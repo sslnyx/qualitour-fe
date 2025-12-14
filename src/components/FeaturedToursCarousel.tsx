@@ -6,6 +6,13 @@ import Autoplay from "embla-carousel-autoplay";
 import Link from "next/link";
 import { WPTour } from "@/lib/wordpress/types";
 
+function normalizeMediaUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\s+/g, "");
+}
+
 interface FeaturedToursCarouselProps {
   tours: WPTour[];
   lang: string;
@@ -70,16 +77,13 @@ export default function FeaturedToursCarousel({
           {tours.map((tour) => {
             const badgeInfo = getBadgeInfo(tour);
             const imageUrl =
-              typeof tour.featured_image_url?.large === "string"
-                ? tour.featured_image_url.large
-                : tour.featured_image_url?.large?.url ||
-                  (typeof tour.featured_image_url?.medium === "string"
-                    ? tour.featured_image_url.medium
-                    : tour.featured_image_url?.medium?.url) ||
-                  (typeof tour.featured_image_url?.thumbnail === "string"
-                    ? tour.featured_image_url.thumbnail
-                    : tour.featured_image_url?.thumbnail?.url) ||
-                  "/placeholder-tour.jpg";
+              normalizeMediaUrl((tour.featured_image_url as any)?.large) ||
+              normalizeMediaUrl(tour.featured_image_url?.large?.url) ||
+              normalizeMediaUrl((tour.featured_image_url as any)?.medium) ||
+              normalizeMediaUrl(tour.featured_image_url?.medium?.url) ||
+              normalizeMediaUrl((tour.featured_image_url as any)?.thumbnail) ||
+              normalizeMediaUrl(tour.featured_image_url?.thumbnail?.url) ||
+              "/placeholder-tour.jpg";
 
             return (
               <div

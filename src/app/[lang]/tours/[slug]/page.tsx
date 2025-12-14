@@ -6,6 +6,13 @@ import TourTabs from '@/components/TourTabs';
 import TourReviews from '@/components/TourReviews';
 import type { Locale } from '@/i18n/config';
 
+function normalizeMediaUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\s+/g, '');
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale; slug: string }> }) {
   try {
     const { slug, lang } = await params;
@@ -71,7 +78,9 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
     redirect(`${localePrefix}/tours`);
   }
 
-  const imageUrl = tour.featured_image_url?.full?.url;
+  const imageUrl =
+    normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
+    normalizeMediaUrl(tour.featured_image_url?.full?.url);
   
   // Get sections - works with both old page_builder and new optimized sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];

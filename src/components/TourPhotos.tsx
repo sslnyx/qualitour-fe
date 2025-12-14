@@ -4,6 +4,13 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { WPTour } from '@/lib/wordpress';
 
+function normalizeMediaUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\s+/g, '');
+}
+
 export default function TourPhotos({ tour }: { tour: WPTour }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -19,7 +26,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
       if (item.type === 'gallery' && item.value?.gallery) {
         item.value.gallery.forEach((img: any) => {
           // Gallery images can have 'url' or 'thumbnail' field
-          const imageUrl = img.url || img.thumbnail;
+          const imageUrl = normalizeMediaUrl(img.url) || normalizeMediaUrl(img.thumbnail);
           if (imageUrl) {
             // Convert thumbnail URL to full-size by removing size suffix like -150x150
             const fullUrl = imageUrl.replace(/-\d+x\d+\.(jpg|jpeg|png|gif|webp)$/i, '.$1');
@@ -32,7 +39,8 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
       
       // Check for image elements
       if (item.type === 'image' && item.value?.url) {
-        galleryImages.push(item.value.url);
+        const url = normalizeMediaUrl(item.value.url);
+        if (url) galleryImages.push(url);
       }
       
       // Check for images embedded in text-box content
@@ -42,7 +50,8 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
         const imgMatches = content.match(/src=["']([^"']+)["']/g);
         if (imgMatches) {
           imgMatches.forEach((match: string) => {
-            const url = match.replace(/src=["']/, '').replace(/["']$/, '');
+            const rawUrl = match.replace(/src=["']/, '').replace(/["']$/, '');
+            const url = normalizeMediaUrl(rawUrl);
             if (url && !galleryImages.includes(url)) {
               galleryImages.push(url);
             }
@@ -53,7 +62,8 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
   });
 
   // Add featured image if not already in gallery
-  const featuredImageUrl = tour.featured_image_url?.full?.url;
+  const featuredImageUrl = normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
+    normalizeMediaUrl(tour.featured_image_url?.full?.url);
   
   if (featuredImageUrl && !galleryImages.includes(featuredImageUrl)) {
     galleryImages.unshift(featuredImageUrl);
