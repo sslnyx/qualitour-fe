@@ -13,6 +13,18 @@ function normalizeMediaUrl(value: unknown): string | null {
   return trimmed.replace(/\s+/g, "");
 }
 
+function proxyIfProtectedMedia(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith('.localsite.io')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // ignore
+  }
+  return url;
+}
+
 interface FeaturedToursCarouselProps {
   tours: WPTour[];
   lang: string;
@@ -85,6 +97,9 @@ export default function FeaturedToursCarousel({
               normalizeMediaUrl(tour.featured_image_url?.thumbnail?.url) ||
               "/placeholder-tour.jpg";
 
+            const renderImageUrl =
+              imageUrl.startsWith('http') ? proxyIfProtectedMedia(imageUrl) : imageUrl;
+
             return (
               <div
                 key={tour.id}
@@ -98,7 +113,7 @@ export default function FeaturedToursCarousel({
                 {/* Image */}
                   <div className="relative h-64 bg-gray-200 overflow-hidden">
                     <img
-                      src={imageUrl}
+                      src={renderImageUrl}
                       alt={tour.title.rendered}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

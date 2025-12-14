@@ -11,6 +11,18 @@ function normalizeMediaUrl(value: unknown): string | null {
   return trimmed.replace(/\s+/g, '');
 }
 
+function proxyIfProtectedMedia(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith('.localsite.io')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // ignore
+  }
+  return url;
+}
+
 export default function TourPhotos({ tour }: { tour: WPTour }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -29,7 +41,9 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
           const imageUrl = normalizeMediaUrl(img.url) || normalizeMediaUrl(img.thumbnail);
           if (imageUrl) {
             // Convert thumbnail URL to full-size by removing size suffix like -150x150
-            const fullUrl = imageUrl.replace(/-\d+x\d+\.(jpg|jpeg|png|gif|webp)$/i, '.$1');
+            const fullUrl = proxyIfProtectedMedia(
+              imageUrl.replace(/-\d+x\d+\.(jpg|jpeg|png|gif|webp)$/i, '.$1')
+            );
             if (!galleryImages.includes(fullUrl)) {
               galleryImages.push(fullUrl);
             }
@@ -40,7 +54,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
       // Check for image elements
       if (item.type === 'image' && item.value?.url) {
         const url = normalizeMediaUrl(item.value.url);
-        if (url) galleryImages.push(url);
+        if (url) galleryImages.push(proxyIfProtectedMedia(url));
       }
       
       // Check for images embedded in text-box content
@@ -53,7 +67,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
             const rawUrl = match.replace(/src=["']/, '').replace(/["']$/, '');
             const url = normalizeMediaUrl(rawUrl);
             if (url && !galleryImages.includes(url)) {
-              galleryImages.push(url);
+              galleryImages.push(proxyIfProtectedMedia(url));
             }
           });
         }
@@ -65,8 +79,9 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
   const featuredImageUrl = normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
     normalizeMediaUrl(tour.featured_image_url?.full?.url);
   
-  if (featuredImageUrl && !galleryImages.includes(featuredImageUrl)) {
-    galleryImages.unshift(featuredImageUrl);
+  if (featuredImageUrl) {
+    const url = proxyIfProtectedMedia(featuredImageUrl);
+    if (!galleryImages.includes(url)) galleryImages.unshift(url);
   }
 
   if (galleryImages.length === 0) {

@@ -13,6 +13,18 @@ function normalizeMediaUrl(value: unknown): string | null {
   return trimmed.replace(/\s+/g, '');
 }
 
+function proxyIfProtectedMedia(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith('.localsite.io')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // ignore
+  }
+  return url;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale; slug: string }> }) {
   try {
     const { slug, lang } = await params;
@@ -81,6 +93,8 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
   const imageUrl =
     normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
     normalizeMediaUrl(tour.featured_image_url?.full?.url);
+
+  const renderImageUrl = imageUrl ? proxyIfProtectedMedia(imageUrl) : null;
   
   // Get sections - works with both old page_builder and new optimized sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
@@ -144,10 +158,10 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
       )}
 
       {/* Hero Image */}
-      {imageUrl && (
+      {renderImageUrl && (
         <div className="relative h-96 bg-gray-200">
           <Image
-            src={imageUrl}
+            src={renderImageUrl}
             alt={tour.title.rendered}
             fill
             className="object-cover"
@@ -176,7 +190,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {!imageUrl && (
+            {!renderImageUrl && (
               <h1 
                 className="text-4xl font-bold text-gray-900 mb-6"
                 dangerouslySetInnerHTML={{ __html: tour.title.rendered }}

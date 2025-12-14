@@ -24,6 +24,18 @@ function normalizeMediaUrl(value: unknown): string | null {
   return trimmed.replace(/\s+/g, '');
 }
 
+function proxyIfProtectedMedia(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith('.localsite.io')) {
+      return `/api/media?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // ignore
+  }
+  return url;
+}
+
 function pickTourImageUrl(tour: WPTour, imageSize: NonNullable<TourCardProps['imageSize']>): string | null {
   const sizes: Array<NonNullable<TourCardProps['imageSize']>> = [
     imageSize,
@@ -36,7 +48,7 @@ function pickTourImageUrl(tour: WPTour, imageSize: NonNullable<TourCardProps['im
   for (const size of sizes) {
     const candidate: unknown = (tour.featured_image_url as any)?.[size];
     const url = normalizeMediaUrl(candidate) || normalizeMediaUrl((candidate as any)?.url);
-    if (url) return url;
+    if (url) return proxyIfProtectedMedia(url);
   }
 
   return null;
