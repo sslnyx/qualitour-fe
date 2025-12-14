@@ -13,7 +13,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
   const { lang } = await params;
   const dict = await getDictionary(lang);
   const localePrefix = getLocalePrefix(lang);
-  
+
   let posts: WPPost[] = [];
   let tours: WPTour[] = [];
   let error: string | null = null;
@@ -29,9 +29,9 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
   try {
     // Fetch ALL tours tagged as "featured" for the carousel
     const featuredTag = await getTourTagBySlug('featured-tour');
-    
+
     if (featuredTag) {
-      tours = await getTours({ 
+      tours = await getTours({
         per_page: 12, // Keep homepage light; tag currently has ~11 tours
         tour_tag: featuredTag.id
       }, lang);
@@ -48,14 +48,22 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
     <>
       {/* Hero Section */}
       <section
-        className="relative bg-cover bg-bottom bg-no-repeat text-white"
+        className="relative text-white"
         style={{
-          backgroundImage: `url('${HeroBackground.src}')`,
           paddingTop: '165px',
           paddingBottom: '165px',
         }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
+        {/* Hero Background Image - Optimized for LCP */}
+        <img
+          src={HeroBackground.src}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover object-bottom"
+          style={{ zIndex: -2 }}
+        />
+        <div className="absolute inset-0 bg-black/50" style={{ zIndex: -1 }}></div>
         <Container className="relative z-10">
           <div className="max-w-4xl mx-auto text-center" style={{ paddingBottom: '50px' }}>
             <h2 className="font-kaushan text-white" style={{ fontSize: '60px', fontWeight: 600, textTransform: 'none' }}>
@@ -76,7 +84,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
                 />
               </div>
               <div className="relative grow w-full md:w-auto">
-                <select 
+                <select
                   name="tax-tour_category"
                   className="w-full px-4 py-3 text-gray-700 bg-white focus:outline-none appearance-none"
                 >
@@ -104,7 +112,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
 
       {/* Features Section */}
       <div className="relative">
-        <section 
+        <section
           className="bg-[#f7941e] text-white rounded-md mx-auto relative z-20"
           style={{
             marginTop: '-40px',
@@ -219,7 +227,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
           </div>
 
           <div className="text-center mt-8">
-            <Link 
+            <Link
               className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] transition-colors font-medium"
               href={`${localePrefix}/private-transfers`}
               style={{ fontSize: '15px' }}

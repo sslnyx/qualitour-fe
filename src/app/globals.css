@@ -1,6 +1,4 @@
-/* Icon Fonts */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
-@import url('https://cdn.jsdelivr.net/npm/eleganticons@0.0.1/css/eleganticons.min.css');
+/* Icon Fonts - All loaded as self-hosted npm packages in layout.tsx */
 
 @import "tailwindcss";
 
@@ -16,12 +14,17 @@
 }
 
 @layer base {
+
   /* Embla Carousel Slide Gaps */
   .embla__slide {
-    flex: 0 0 calc(33.3333% - 0.75rem); /* Show 3 slides minus the gap */
-    margin-right: 1.5rem; /* 24px - consistent with gap-6 */
-    padding-top: 0.5rem; /* 8px - for shadow spacing */
-    padding-bottom: 0.5rem; /* 8px - for shadow spacing */
+    flex: 0 0 calc(33.3333% - 0.75rem);
+    /* Show 3 slides minus the gap */
+    margin-right: 1.5rem;
+    /* 24px - consistent with gap-6 */
+    padding-top: 0.5rem;
+    /* 8px - for shadow spacing */
+    padding-bottom: 0.5rem;
+    /* 8px - for shadow spacing */
   }
 
   body {

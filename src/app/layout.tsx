@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { Poppins, ABeeZee, Dancing_Script, Kaushan_Script } from "next/font/google";
 import "./globals.css";
 
+// Self-hosted icon fonts (eliminates external CDN requests, includes font-display: swap)
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import "@fontsource/material-icons";
+import "@fontsource/material-symbols-outlined";
+import "eleganticons/css/style.css";
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -43,23 +49,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {/* FontAwesome */}
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
-        {/* Google Material Icons (for `material-icons`) */}
-        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-        {/* Google Material Symbols Outlined (for `material-symbols-outlined`) */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-        />
-      </head>
       <body
         className={`${poppins.variable} ${aBeeZee.variable} ${dancingScript.variable} ${kaushanScript.variable} font-sans antialiased`}
       >

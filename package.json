@@ -13,8 +13,12 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@fontsource/material-icons": "^5.2.7",
+    "@fontsource/material-symbols-outlined": "^5.2.30",
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@opennextjs/cloudflare": "^1.14.6",
     "clsx": "^2.1.1",
+    "eleganticons": "^0.0.1",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "next": "16.0.10",
