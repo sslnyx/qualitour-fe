@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 function getEnv(key: string): string | undefined {
   // Cloudflare Workers may not define `process`.
   if (typeof process !== 'undefined' && (process as any).env) {
