@@ -7,7 +7,32 @@
 
 import { fetchSerpAPIReviews, transformSerpAPIReview } from '@/lib/serpapi';
 
-const WORDPRESS_API = process.env.NEXT_PUBLIC_WORDPRESS_API_URL?.replace('/wp/v2', '');
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+}
+
+function getWordPressCustomApiBase(): string {
+  const direct =
+    process.env.NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL ||
+    process.env.WORDPRESS_CUSTOM_API_URL;
+  if (direct) return normalizeBaseUrl(direct);
+
+  const wpV2 = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+  if (!wpV2) {
+    throw new Error('WordPress API URL is not configured');
+  }
+
+  if (wpV2.includes('/wp-json/qualitour/v1')) return normalizeBaseUrl(wpV2);
+  if (wpV2.includes('/wp-json/wp/v2')) {
+    return normalizeBaseUrl(wpV2.replace('/wp-json/wp/v2', '/wp-json/qualitour/v1'));
+  }
+
+  // Last resort: treat as origin.
+  const parsed = new URL(wpV2);
+  return `${parsed.origin}/wp-json/qualitour/v1`;
+}
+
+const WORDPRESS_CUSTOM_API = getWordPressCustomApiBase();
 const SYNC_KEY = process.env.REVIEWS_SYNC_KEY || 'sync-key-' + process.env.NEXT_PUBLIC_WORDPRESS_API_URL?.split('//')[1];
 
 export async function GET(request: Request) {
@@ -36,7 +61,7 @@ export async function GET(request: Request) {
 
     // Default: Get WordPress reviews (from cache)
     const wpResponse = await fetch(
-      `${WORDPRESS_API}/wp-json/qualitour/v1/google-reviews`,
+      `${WORDPRESS_CUSTOM_API}/google-reviews`,
       {
         cache: 'no-store',
       }
@@ -88,7 +113,7 @@ export async function POST(request: Request) {
       const reviews = serpapiData.reviews.map(transformSerpAPIReview);
 
       const wpSyncResponse = await fetch(
-        `${WORDPRESS_API}/wp-json/qualitour/v1/google-reviews/sync?key=${encodeURIComponent(key)}`,
+        `${WORDPRESS_CUSTOM_API}/google-reviews/sync?key=${encodeURIComponent(key)}`,
         {
           method: 'POST',
           headers: {
@@ -136,7 +161,7 @@ export async function DELETE(request: Request) {
 
     // Delete all reviews from WordPress
     const wpResponse = await fetch(
-      `${WORDPRESS_API}/wp-json/qualitour/v1/google-reviews/clear?key=${encodeURIComponent(key)}`,
+      `${WORDPRESS_CUSTOM_API}/google-reviews/clear?key=${encodeURIComponent(key)}`,
       {
         method: 'DELETE',
       }

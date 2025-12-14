@@ -2,6 +2,7 @@ import { type Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import { getTourTypes } from '@/lib/wordpress';
 import Link from 'next/link';
+import { normalizeWpText } from '@/lib/wordpress/text';
 
 interface Props {
   params: Promise<{ lang: Locale }>;
@@ -49,8 +50,8 @@ export default async function TourTypesPage({ params }: Props) {
 
     return {
       slug,
-      name: term?.name || fallback.name,
-      description: term?.description || fallback.description,
+      name: term?.name ? normalizeWpText(term.name) : fallback.name,
+      description: term?.description ? normalizeWpText(term.description) : fallback.description,
     };
   });
 

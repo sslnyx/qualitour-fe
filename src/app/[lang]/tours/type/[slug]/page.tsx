@@ -1,8 +1,9 @@
-import { getTourTypeBySlug } from '@/lib/wordpress';
+import { getTourTypeBySlug, getToursPaged } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
 import { type Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import type { WPTour } from '@/lib/wordpress/types';
+import { normalizeWpText } from '@/lib/wordpress/text';
 
 const VIKING_HERO_BG = 'http://qualitour.local/wp-content/uploads/2020/10/tour_cover2-scaled.jpg';
 const VIKING_INTRO_IMAGE = 'http://qualitour.local/wp-content/uploads/2023/07/81e60901eb82dcb92a7314843431d657c2be56c3799dbd9f384049e537f7f127-scaled.webp';
@@ -18,6 +19,24 @@ const VIKING_BULLETS = [
   '24-hour service',
 ];
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: Locale; slug: string }>;
+}) {
+  const { lang, slug } = await params;
+  const tourType = await getTourTypeBySlug(slug, lang);
+  const title = tourType ? normalizeWpText(tourType.name) : 'Tour Type';
+  const description = tourType?.description
+    ? normalizeWpText(tourType.description)
+    : `Browse tours in ${title}.`;
+
+  return {
+    title: `${title} Tours | Qualitour`,
+    description,
+  };
+}
+
 export default async function TourTypePage({
   params,
   searchParams,
@@ -32,7 +51,7 @@ export default async function TourTypePage({
 
   const isVikingCruisesPage = type === 'cruises';
 
-  const tourType = await getTourTypeBySlug(type);
+  const tourType = await getTourTypeBySlug(type, lang);
   if (!tourType) {
     return (
       <div className="container-qualitour py-8">
@@ -49,69 +68,20 @@ export default async function TourTypePage({
   let totalPages = 0;
 
   try {
-    // Use direct fetch to read WP pagination headers (X-WP-Total / X-WP-TotalPages)
-    // and avoid the REST API hard cap of 100 items per request.
-    const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
-    if (!apiUrl) {
-      throw new Error('WordPress API URL is not configured');
-    }
-
-    const url = new URL(`${apiUrl}/tour`);
-    // Dedicated taxonomy: rest_base is `tour-type`, so query param is `tour-type`.
-    url.searchParams.set('tour-type', String(tourType.id));
-    url.searchParams.set('per_page', String(perPage));
-    url.searchParams.set('page', String(page));
-    url.searchParams.set('_embed', 'true');
-    url.searchParams.set('_fields', 'id,slug,title,excerpt,featured_media,tour_category,tour_tag,featured_image_url,tour_meta,_embedded');
-    url.searchParams.set('orderby', 'date');
-    url.searchParams.set('order', 'desc');
-    url.searchParams.set('lang', lang);
-
-    // Basic Auth (Local Live Link / protected endpoints)
-    const urlObj = new URL(url.toString());
-    let authHeader: Record<string, string> = {};
-
-    let username = urlObj.username;
-    let password = urlObj.password;
-
-    if (!username || !password) {
-      username = process.env.WORDPRESS_AUTH_USER || '';
-      password = process.env.WORDPRESS_AUTH_PASS || '';
-    }
-
-    if (username && password) {
-      const credentials = Buffer.from(`${username}:${password}`).toString('base64');
-      authHeader = { Authorization: `Basic ${credentials}` };
-      urlObj.username = '';
-      urlObj.password = '';
-    }
-
-    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
-    const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
-    const timeoutId = controller
-      ? setTimeout(() => {
-          controller.abort();
-        }, timeoutMs)
-      : null;
-
-    const response = await fetch(urlObj.toString(), {
-      next: { revalidate: 3600 },
-      signal: controller?.signal,
-      headers: {
-        ...authHeader,
-        'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
+    const result = await getToursPaged(
+      {
+        'tour-type': tourType.id,
+        per_page: perPage,
+        page,
+        orderby: 'date',
+        order: 'desc',
       },
-    }).finally(() => {
-      if (timeoutId) clearTimeout(timeoutId);
-    });
+      lang
+    );
 
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
-    }
-
-    totalTours = Number(response.headers.get('X-WP-Total') || '0');
-    totalPages = Number(response.headers.get('X-WP-TotalPages') || '0');
-    tours = (await response.json()) as WPTour[];
+    totalTours = result.total;
+    totalPages = result.totalPages;
+    tours = result.tours;
   } catch (e) {
     console.error('Error fetching tours:', e);
     error = e instanceof Error ? e.message : 'Failed to load tours. Please try again.';
@@ -174,9 +144,9 @@ export default async function TourTypePage({
         </>
       ) : (
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{tourType.name}</h1>
+          <h1 className="text-4xl font-bold mb-2">{normalizeWpText(tourType.name)}</h1>
           {tourType.description && (
-            <p className="text-lg text-gray-600 mb-4">{tourType.description}</p>
+            <p className="text-lg text-gray-600 mb-4">{normalizeWpText(tourType.description)}</p>
           )}
           <p className="text-sm text-gray-500">{`${totalTours} tours found`}</p>
         </div>

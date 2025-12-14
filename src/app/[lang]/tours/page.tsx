@@ -1,4 +1,4 @@
-import { getTours, getTourDestinations, getTourActivities, searchToursAdvanced } from '@/lib/wordpress';
+import { getAllTourDestinations, getTourActivities, searchToursAdvanced } from '@/lib/wordpress';
 import type { WPTour, WPTourDestination, WPTourActivity } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
 import { TourFilter } from '@/components/TourFilter';
@@ -47,7 +47,9 @@ export default async function ToursPage({ params, searchParams }: ToursPageProps
 
   try {
     // Fetch destinations and activities for filter dropdowns
-    destinations = await getTourDestinations({ per_page: 100, lang });
+    // Use the same paging shape as the mega-menu to let request-level dedupe kick in.
+    // (Layout fetches `getAllTourDestinations` which calls `/tour-destination?page=1&per_page=100`.)
+    destinations = await getAllTourDestinations({ per_page: 100, lang }, { maxPages: 1 });
     activities = await getTourActivities({ per_page: 100, lang });
 
     const searchResult = await searchToursAdvanced({

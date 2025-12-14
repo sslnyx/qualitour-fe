@@ -11,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { slug, lang } = await params;
-  const term = await getTourDestinationBySlug(slug);
+  const term = await getTourDestinationBySlug(slug, lang);
   
   // Fallback title if term not found
   const name = term ? term.name : slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -30,7 +30,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
   const perPage = 12;
 
   // Get the destination term for metadata with language-specific count
-  let term = await getTourDestinationBySlug(slug);
+  let term = await getTourDestinationBySlug(slug, lang);
   
   // If term doesn't exist in WP, create a virtual one for display
   if (!term) {

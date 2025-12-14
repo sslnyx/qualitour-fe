@@ -5,6 +5,32 @@
 
 const SERPAPI_KEY = process.env.SERPAPI_KEY;
 
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+}
+
+function getWordPressCustomApiBase(): string | null {
+  const direct =
+    process.env.NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL ||
+    process.env.WORDPRESS_CUSTOM_API_URL;
+  if (direct) return normalizeBaseUrl(direct);
+
+  const wpV2 = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL;
+  if (!wpV2) return null;
+
+  if (wpV2.includes('/wp-json/qualitour/v1')) return normalizeBaseUrl(wpV2);
+  if (wpV2.includes('/wp-json/wp/v2')) {
+    return normalizeBaseUrl(wpV2.replace('/wp-json/wp/v2', '/wp-json/qualitour/v1'));
+  }
+
+  try {
+    const parsed = new URL(wpV2);
+    return `${parsed.origin}/wp-json/qualitour/v1`;
+  } catch {
+    return null;
+  }
+}
+
 export interface SerpAPIReview {
   reviewer: string;
   reviewer_url?: string;
@@ -91,8 +117,13 @@ export function transformSerpAPIReview(review: SerpAPIReview) {
  */
 export async function triggerSerpAPISync(syncKey: string = '') {
   try {
+    const customApiBase = getWordPressCustomApiBase();
+    if (!customApiBase) {
+      throw new Error('WordPress custom API URL is not configured');
+    }
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WORDPRESS_API_URL?.replace('/wp/v2', '')}/wp-json/qualitour/v1/google-reviews/sync`,
+      `${customApiBase}/google-reviews/sync`,
       {
         method: 'POST',
         headers: {
