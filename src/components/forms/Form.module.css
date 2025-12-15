@@ -172,3 +172,10 @@
     font-weight: 600;
     color: #333;
 }
+
+.tourInfoCode {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #f7941e;
+    font-family: monospace;
+}

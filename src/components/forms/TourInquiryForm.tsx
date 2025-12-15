@@ -6,6 +6,7 @@ import styles from './Form.module.css';
 
 interface TourInquiryFormProps {
     tourId: string | number;
+    tourCode?: string;
     tourTitle: string;
     className?: string;
     onSuccess?: () => void;
@@ -13,6 +14,7 @@ interface TourInquiryFormProps {
 
 export default function TourInquiryForm({
     tourId,
+    tourCode,
     tourTitle,
     className,
     onSuccess,
@@ -81,6 +83,7 @@ export default function TourInquiryForm({
         try {
             const data: TourInquiryFormData = {
                 tourId: String(tourId),
+                tourCode: tourCode || '',
                 tourTitle,
                 name: formData.name,
                 email: formData.email,
@@ -141,6 +144,9 @@ export default function TourInquiryForm({
             <div className={styles.tourInfo}>
                 <span className={styles.tourInfoLabel}>Inquiring about:</span>
                 <span className={styles.tourInfoValue}>{tourTitle}</span>
+                {tourCode && (
+                    <span className={styles.tourInfoCode}>Tour Code: {tourCode}</span>
+                )}
             </div>
 
             {result && (

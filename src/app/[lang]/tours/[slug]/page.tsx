@@ -136,7 +136,9 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
   const durationDetail = tourDetails.find((d: any) => d.title?.includes('Days') || d.title?.includes('Night'))?.title;
   const groupSizeDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('people') || d.title?.toLowerCase().includes('pax'))?.title;
   const datesDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('every') || d.title?.match(/\d{2}\/[A-Za-z]{3}\/\d{4}/))?.title;
-  const tourCodeDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('tour code'))?.title;
+  const tourCodeDetailRaw = tourDetails.find((d: any) => d.title?.toLowerCase().includes('tour code'))?.title;
+  // Extract just the code (e.g., "Tour Code: TPE8D5AHA15" -> "TPE8D5AHA15")
+  const tourCodeDetail = tourCodeDetailRaw?.replace(/^tour\s*code\s*:?\s*/i, '').trim() || tourCodeDetailRaw;
 
   // Fallback to tour_meta
   const price = tour.tour_meta?.price;

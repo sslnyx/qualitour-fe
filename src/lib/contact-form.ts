@@ -127,6 +127,7 @@ export interface ContactFormData {
 
 export interface TourInquiryFormData {
     tourId: string;
+    tourCode?: string;
     tourTitle: string;
     name: string;
     email: string;
@@ -162,9 +163,16 @@ export async function submitContactForm(data: ContactFormData): Promise<CF7Respo
  * Submit a tour inquiry form
  */
 export async function submitTourInquiryForm(data: TourInquiryFormData): Promise<CF7Response> {
+    // Generate subject line for Flamingo
+    const subject = data.tourCode
+        ? `Tour Inquiry: ${data.tourCode} - ${data.tourTitle}`
+        : `Tour Inquiry: ${data.tourTitle}`;
+
     return submitCF7Form(CF7_FORM_IDS.TOUR_INQUIRY, {
         'tour-id': data.tourId,
+        'tour-code': data.tourCode || '',
         'tour-title': data.tourTitle,
+        'your-subject': subject,
         'your-name': data.name,
         'your-email': data.email,
         'your-phone': data.phone,
@@ -178,7 +186,10 @@ export async function submitTourInquiryForm(data: TourInquiryFormData): Promise<
  * Submit a visa inquiry form
  */
 export async function submitVisaInquiryForm(data: VisaInquiryFormData): Promise<CF7Response> {
+    const subject = `China Visa Inquiry: ${data.visaType} - ${data.name}`;
+
     return submitCF7Form(CF7_FORM_IDS.VISA_INQUIRY, {
+        'your-subject': subject,
         'your-name': data.name,
         'your-email': data.email,
         'your-phone': data.phone,

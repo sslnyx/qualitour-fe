@@ -157,6 +157,7 @@ export default function TourSidebarForm({
                         </div>
                         <TourInquiryForm
                             tourId={tourId}
+                            tourCode={tourCodeDetail}
                             tourTitle={tourTitle}
                             onSuccess={() => {
                                 // Keep form visible to show success message
