@@ -165,7 +165,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200 w-full z-50">
+    <nav className="bg-white border-b border-gray-200 w-full sticky top-0 z-50">
       <div className="container-qualitour">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
