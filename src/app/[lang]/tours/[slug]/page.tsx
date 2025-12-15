@@ -8,12 +8,19 @@ import TourSidebarForm from '@/components/TourSidebarForm';
 import type { Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
 
+// Revalidate tour pages every 15 minutes
+// This enables ISR so pages are served from cache with minimal CPU usage
+export const revalidate = 900;
+
 /**
  * Pre-generate tour detail pages at build time.
+ * Limit to 50 most recent tours per language to avoid memory issues.
+ * Remaining tours will be generated on-demand and cached.
  */
 export async function generateStaticParams() {
   try {
-    const tours = await getTours({ per_page: 100 });
+    // Limit to 50 tours to avoid memory/CPU issues during build
+    const tours = await getTours({ per_page: 50, orderby: 'date', order: 'desc' });
     return i18n.locales.flatMap((lang) =>
       tours.map((tour) => ({
         lang,

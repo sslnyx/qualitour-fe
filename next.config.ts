@@ -12,6 +12,43 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const nextConfig: NextConfig = {
+  // Enable CDN caching of HTML pages
+  // This tells Cloudflare to cache full HTML responses at the edge
+  // so the Worker only runs ONCE per cache TTL (5 min for pages)
+  async headers() {
+    return [
+      {
+        // Cache HTML pages at CDN for 5 minutes, stale-while-revalidate for 1 hour
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      {
+        // Static tour pages - cache longer (15 min)
+        source: '/tours/:slug',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=900, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      {
+        // Static pages - cache even longer (1 hour)
+        source: '/(about-us|contact|faq|privacy-policy|visa)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

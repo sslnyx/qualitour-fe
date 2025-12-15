@@ -1,13 +1,19 @@
-import { getAllTourDestinations, getTourActivities, getToursPaged } from '@/lib/wordpress';
+import { getAllTourDestinations, getTourActivities, getToursPaged, getTourDestinationBySlug, getTourActivityBySlug } from '@/lib/wordpress';
 import type { WPTour, WPTourDestination, WPTourActivity } from '@/lib/wordpress';
 import { TourFilterSidebar } from '@/components/TourFilterSidebar';
 import { type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 
+// Revalidate every 15 minutes with ISR
+export const revalidate = 900;
+
 export const metadata = {
   title: 'Tours | Qualitour',
   description: 'Browse our collection of amazing tours',
 };
+
+// OPTIMIZED: Only fetch 12 tours per page for Cloudflare Workers free tier (10ms CPU limit)
+const TOURS_PER_PAGE = 12;
 
 interface ToursPageProps {
   params: Promise<{ lang: Locale }>;
@@ -16,36 +22,120 @@ interface ToursPageProps {
     destination?: string;
     activity?: string;
     page?: string;
-    orderby?: string;
+    sort?: string;
   }>;
 }
 
 export default async function ToursPage({ params, searchParams }: ToursPageProps) {
   const { lang } = await params;
+  const resolvedSearchParams = await searchParams;
+
+  // Extract filter parameters
+  const currentPage = parseInt(resolvedSearchParams.page || '1', 10);
+  const searchQuery = resolvedSearchParams.search || '';
+  const destinationSlug = resolvedSearchParams.destination || '';
+  const activitySlug = resolvedSearchParams.activity || '';
+  const sortOrder = resolvedSearchParams.sort || 'date';
+
   const dict = await getDictionary(lang);
 
-  let allTours: WPTour[] = [];
+  let tours: WPTour[] = [];
+  let totalTours = 0;
+  let totalPages = 1;
   let destinations: WPTourDestination[] = [];
   let activities: WPTourActivity[] = [];
   let error: string | null = null;
 
-  try {
-    // Fetch all data in parallel for faster loading
-    const [toursResult, destinationsResult, activitiesResult] = await Promise.all([
-      // Fetch all tours at once (up to 300) for client-side filtering
-      getToursPaged({ per_page: 300, lang: lang !== 'en' ? lang : undefined }),
-      getAllTourDestinations({ per_page: 100, lang }, { maxPages: 1 }),
-      getTourActivities({ per_page: 100, lang }),
-    ]);
+  // For showing active filter names
+  let activeDestination: WPTourDestination | null = null;
+  let activeActivity: WPTourActivity | null = null;
 
-    allTours = toursResult.tours;
+  try {
+    // Build API params based on URL filters
+    const tourParams: Record<string, any> = {
+      per_page: TOURS_PER_PAGE,
+      page: currentPage,
+    };
+
+    // Add search filter
+    if (searchQuery) {
+      tourParams.search = searchQuery;
+    }
+
+    // Add sorting
+    if (sortOrder === 'price-asc') {
+      tourParams.orderby = 'meta_value_num';
+      tourParams.meta_key = 'tour-price-text';
+      tourParams.order = 'asc';
+    } else if (sortOrder === 'price-desc') {
+      tourParams.orderby = 'meta_value_num';
+      tourParams.meta_key = 'tour-price-text';
+      tourParams.order = 'desc';
+    } else if (sortOrder === 'name') {
+      tourParams.orderby = 'title';
+      tourParams.order = 'asc';
+    } else {
+      tourParams.orderby = 'date';
+      tourParams.order = 'desc';
+    }
+
+    // Prepare promises for parallel fetching
+    const fetchPromises: Promise<any>[] = [
+      // Reduced from 100 to 20 top destinations
+      getAllTourDestinations({ per_page: 20, lang }, { maxPages: 1 }),
+      // Reduced from 100 to 15 activities
+      getTourActivities({ per_page: 15, lang }),
+    ];
+
+    // If filtering by destination, get the ID first
+    if (destinationSlug) {
+      fetchPromises.push(getTourDestinationBySlug(destinationSlug, lang));
+    }
+
+    // If filtering by activity, get the ID first
+    if (activitySlug) {
+      fetchPromises.push(getTourActivityBySlug(activitySlug, lang));
+    }
+
+    // Execute parallel fetches for taxonomies
+    const [destinationsResult, activitiesResult, ...filterResults] = await Promise.all(fetchPromises);
+
     destinations = destinationsResult;
     activities = activitiesResult;
 
+    // Extract filter term IDs
+    let filterIndex = 0;
+    if (destinationSlug && filterResults[filterIndex]) {
+      activeDestination = filterResults[filterIndex] as WPTourDestination;
+      if (activeDestination?.id) {
+        tourParams.tour_destination = activeDestination.id;
+      }
+      filterIndex++;
+    }
+
+    if (activitySlug && filterResults[filterIndex]) {
+      activeActivity = filterResults[filterIndex] as WPTourActivity;
+      if (activeActivity?.id) {
+        tourParams.tour_activity = activeActivity.id;
+      }
+    }
+
+    // Now fetch tours with all filters applied
+    const toursResult = await getToursPaged(
+      tourParams,
+      lang !== 'en' ? lang : undefined
+    );
+
+    tours = toursResult.tours;
+    totalTours = toursResult.total;
+    totalPages = toursResult.totalPages;
+
     // Fallback to English if no tours found and not already English
-    if ((!allTours || allTours.length === 0) && lang !== 'en') {
-      const fallbackResult = await getToursPaged({ per_page: 300 });
-      allTours = fallbackResult.tours;
+    if ((!tours || tours.length === 0) && lang !== 'en' && currentPage === 1 && !searchQuery && !destinationSlug && !activitySlug) {
+      const fallbackResult = await getToursPaged({ per_page: TOURS_PER_PAGE, page: 1 });
+      tours = fallbackResult.tours;
+      totalTours = fallbackResult.total;
+      totalPages = fallbackResult.totalPages;
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch tours';
@@ -66,23 +156,20 @@ export default async function ToursPage({ params, searchParams }: ToursPageProps
     );
   }
 
-  if (!allTours || allTours.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">No Tours Found</h1>
-          <p className="text-gray-600">Check back later for exciting tour packages!</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <TourFilterSidebar
-      tours={allTours}
+      tours={tours}
+      totalTours={totalTours}
+      currentPage={currentPage}
+      totalPages={totalPages}
       destinations={destinations}
       activities={activities}
       lang={lang}
+      // Pass active filters for UI state
+      activeSearch={searchQuery}
+      activeDestination={activeDestination}
+      activeActivity={activeActivity}
+      activeSort={sortOrder}
     />
   );
 }

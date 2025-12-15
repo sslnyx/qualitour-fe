@@ -161,6 +161,13 @@ function extractPriceNumber(caption: string): string | null {
   return m ? m[1] : null;
 }
 
+// Static page - generate at build time
+export async function generateStaticParams() {
+  return [{ lang: 'en' }, { lang: 'zh' }];
+}
+
+export const revalidate = 86400; // 24 hours
+
 export async function generateMetadata({
   params,
 }: {

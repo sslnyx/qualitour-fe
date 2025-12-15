@@ -9,6 +9,14 @@ import PageHero from '@/components/PageHero';
 import miniTourImg from '../../../../public/mini-tour.jpg';
 import skiShuttleImg from '../../../../public/ski-shuttle.jpg';
 
+// Static page - generate for both languages at build time
+export async function generateStaticParams() {
+  return [{ lang: 'en' }, { lang: 'zh' }];
+}
+
+// Rarely changes - revalidate every 24 hours
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'About Us | Qualitour',
   description: 'Discover the story behind Qualitour, Vancouver\'s premier tour operator dedicated to authentic, safe, and personalized Canadian travel experiences.',

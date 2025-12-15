@@ -7,6 +7,13 @@ import { getLocalePrefix } from '@/i18n/config';
 import { FAQCategories, FAQQuickLinks } from '@/components/FAQAccordion';
 import PageHero from '@/components/PageHero';
 
+// Static page - generate at build time
+export async function generateStaticParams() {
+    return [{ lang: 'en' }, { lang: 'zh' }];
+}
+
+export const revalidate = 86400; // 24 hours
+
 export const metadata: Metadata = {
     title: 'Frequently Asked Questions | Qualitour',
     description: 'Find answers to common questions about Qualitour tours, bookings, cancellations, payment methods, and travel requirements.',

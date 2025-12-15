@@ -1,7 +1,7 @@
 import SiteNav from "@/components/SiteNav";
 import Footer from "@/components/layout/Footer";
 import { i18n, type Locale } from '@/i18n/config';
-import { getAllTourDestinations, getTourActivities, getTourDurations, getTourTypes } from '@/lib/wordpress/api';
+import { getSiteNavData } from '@/lib/wordpress/api';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { translateTaxonomyTerms } from '@/lib/taxonomy-translations';
 
@@ -20,25 +20,25 @@ export default async function LocaleLayout({
 
   const dict = await getDictionary(lang);
 
-  let activitiesRaw: Awaited<ReturnType<typeof getTourActivities>> = [];
-  let destinationsRaw: Awaited<ReturnType<typeof getAllTourDestinations>> = [];
-  let durationsRaw: Awaited<ReturnType<typeof getTourDurations>> = [];
-  let typesRaw: Awaited<ReturnType<typeof getTourTypes>> = [];
+  // OPTIMIZED: Single API call instead of 4 parallel fetches
+  // This reduces CPU usage by ~75% on Cloudflare Workers during cache miss
+  let siteNavData: Awaited<ReturnType<typeof getSiteNavData>> = {
+    activities: [],
+    destinations: [],
+    durations: [],
+    types: [],
+  };
 
   try {
-    [activitiesRaw, destinationsRaw, durationsRaw, typesRaw] = await Promise.all([
-      getTourActivities({ per_page: 100, lang }),
-      getAllTourDestinations({ per_page: 100, lang }),
-      getTourDurations({ per_page: 100, lang }),
-      getTourTypes({ per_page: 100, lang }),
-    ]);
+    siteNavData = await getSiteNavData(lang);
   } catch (e) {
-    console.error('[Layout] Failed to fetch menu taxonomies:', e);
+    console.error('[Layout] Failed to fetch site nav data:', e);
   }
 
+  // Apply translations to activities and destinations
   const [activities, destinations] = await Promise.all([
-    translateTaxonomyTerms(activitiesRaw, lang, 'activity'),
-    translateTaxonomyTerms(destinationsRaw, lang, 'destination'),
+    translateTaxonomyTerms(siteNavData.activities, lang, 'activity'),
+    translateTaxonomyTerms(siteNavData.destinations, lang, 'destination'),
   ]);
 
   return (
@@ -47,8 +47,8 @@ export default async function LocaleLayout({
         lang={lang}
         activities={activities}
         destinations={destinations}
-        durations={durationsRaw}
-        types={typesRaw}
+        durations={siteNavData.durations}
+        types={siteNavData.types}
         dict={dict}
       />
       <main className="flex-1">

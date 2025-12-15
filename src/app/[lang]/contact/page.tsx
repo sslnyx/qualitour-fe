@@ -5,6 +5,13 @@ import type { Locale } from '@/i18n/config';
 import { ContactForm } from '@/components/forms';
 import PageHero from '@/components/PageHero';
 
+// Static page - generate at build time
+export async function generateStaticParams() {
+  return [{ lang: 'en' }, { lang: 'zh' }];
+}
+
+export const revalidate = 86400; // 24 hours
+
 export const metadata: Metadata = {
   title: 'Contact Us | Qualitour',
   description: 'Get in touch with Qualitour. Contact us by phone, email, or visit our office in Vancouver.',

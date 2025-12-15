@@ -1,7 +1,6 @@
-import { getPosts, getTours, getTourTagBySlug, WPPost, WPTour } from '@/lib/wordpress';
+import { getTours, getTourTagBySlug, WPTour } from '@/lib/wordpress';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
-import { formatDate } from '@/lib/utils';
 import FeaturedToursCarousel from '@/components/FeaturedToursCarousel';
 import FeaturedGoogleReview from '@/components/FeaturedGoogleReview';
 import type { Locale } from '@/i18n/config';
@@ -10,30 +9,38 @@ import { getLocalePrefix } from '@/i18n/config';
 import TransferBookingModalButton from '@/components/TransferBookingModalButton';
 import HeroBackground from '@/assets/dimitar-donovski-h9Zr7Hq8yaA-unsplash-scaled-e1698877564378.webp';
 
+// Pre-generate homepage for both languages at build time
+// This eliminates CPU usage for most requests (served from CDN)
+export async function generateStaticParams() {
+  return [
+    { lang: 'en' },
+    { lang: 'zh' },
+  ];
+}
+
+// Revalidate the homepage every 15 minutes
+// This means most requests are served from static cache with 0 CPU
+export const revalidate = 900;
+
 export default async function Home({ params }: { params: Promise<{ lang: Locale }> }) {
   const { lang } = await params;
-  const dict = await getDictionary(lang);
   const localePrefix = getLocalePrefix(lang);
 
-  let posts: WPPost[] = [];
+  // Fetch dictionary and tag in PARALLEL to minimize CPU time
+  // NOTE: Removed getPosts() call - posts were fetched but never used!
+  // This saves ~2-3ms of CPU time per request
+  const [dict, featuredTagResult] = await Promise.all([
+    getDictionary(lang),
+    getTourTagBySlug('featured-tour').catch(() => null),
+  ]);
+
+  // Now fetch tours (depends on tag result, but tag query is edge-cached)
   let tours: WPTour[] = [];
-  let error: string | null = null;
   let toursError: string | null = null;
 
   try {
-    posts = await getPosts({ per_page: 6 }, lang);
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to fetch posts';
-    console.error('Error fetching posts:', e);
-  }
-
-  try {
-    const featuredTag = await getTourTagBySlug('featured-tour');
-    if (featuredTag) {
-      tours = await getTours({
-        per_page: 12,
-        tour_tag: featuredTag.id
-      }, lang);
+    if (featuredTagResult) {
+      tours = await getTours({ per_page: 12, tour_tag: featuredTagResult.id }, lang);
     } else {
       tours = await getTours({ per_page: 12 }, lang);
     }

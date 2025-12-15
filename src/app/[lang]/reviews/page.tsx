@@ -8,6 +8,14 @@ import { getBusinessReviews } from '@/lib/wordpress/api';
 import PremiumReviewsGrid from '@/components/PremiumReviewsGrid';
 import PageHero from '@/components/PageHero';
 
+// Static page - generate at build time
+export async function generateStaticParams() {
+  return [{ lang: 'en' }, { lang: 'zh' }];
+}
+
+// Reviews change rarely - long cache
+export const revalidate = 86400; // 24 hours
+
 export const metadata: Metadata = {
   title: 'Customer Reviews | Qualitour',
   description: 'Read authentic reviews from our happy customers. See why travelers trust Qualitour for their tour experiences.',

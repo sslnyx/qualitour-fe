@@ -1,15 +1,24 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useCallback } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { WPTour, WPTourDestination, WPTourActivity } from '@/lib/wordpress';
 import { TourCard } from './TourCard';
+import Link from 'next/link';
 
 interface TourFilterSidebarProps {
     tours: WPTour[];
+    totalTours: number;
+    currentPage: number;
+    totalPages: number;
     destinations: WPTourDestination[];
     activities: WPTourActivity[];
     lang: string;
+    // Active filters from URL
+    activeSearch?: string;
+    activeDestination?: WPTourDestination | null;
+    activeActivity?: WPTourActivity | null;
+    activeSort?: string;
 }
 
 // Build destination hierarchy for nested display
@@ -30,201 +39,80 @@ function buildDestinationTree(destinations: WPTourDestination[]) {
     return { topLevel, parentMap };
 }
 
-// Parse price from tour meta
-function getTourPrice(tour: WPTour): number | null {
-    const meta = tour.tour_meta;
-    if (!meta) return null;
-
-    // Try discount price first, then regular price
-    const priceStr = meta['tour-price-discount-text'] || meta['tour-price-text'] || meta.price;
-    if (!priceStr) return null;
-
-    // Extract numeric value from price string (e.g., "From $1,299" -> 1299)
-    const match = String(priceStr).replace(/,/g, '').match(/\d+/);
-    return match ? parseInt(match[0], 10) : null;
-}
-
-// Get duration in days from tour meta, title, or taxonomy
-function getTourDuration(tour: WPTour): number | null {
-    // 1. Try tour_meta.duration_text (e.g., "4 Days / 3 Nights" or "8 Days")
-    const durationText = tour.tour_meta?.duration_text;
-    if (durationText) {
-        const match = String(durationText).match(/(\d+)\s*Days?/i);
-        if (match) return parseInt(match[1], 10);
-    }
-
-    // 2. Try to extract from title (e.g., "Yellowknife Winter Aurora 4 Days")
-    const titleMatch = tour.title.rendered.match(/(\d+)\s*Days?/i);
-    if (titleMatch) return parseInt(titleMatch[1], 10);
-
-    // 3. Try tour_terms.durations taxonomy (e.g., [{name: "4-6 Days", slug: "4-6-days"}])
-    const durations = tour.tour_terms?.durations;
-    if (durations && durations.length > 0) {
-        const durationName = durations[0].name;
-        // Parse "4-6 Days" -> take the first number
-        const termMatch = String(durationName).match(/(\d+)/);
-        if (termMatch) return parseInt(termMatch[1], 10);
-    }
-
-    // 4. Try raw duration meta field
-    const rawDuration = tour.tour_meta?.duration;
-    if (rawDuration) {
-        const match = String(rawDuration).match(/(\d+)/);
-        if (match) return parseInt(match[1], 10);
-    }
-
-    return null;
-}
-
 export function TourFilterSidebar({
     tours,
+    totalTours,
+    currentPage,
+    totalPages,
     destinations,
     activities,
     lang,
+    activeSearch = '',
+    activeDestination = null,
+    activeActivity = null,
+    activeSort = 'date',
 }: TourFilterSidebarProps) {
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    // Filter states
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedDestinations, setSelectedDestinations] = useState<Set<string>>(new Set());
-    const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
-    const [durationRange, setDurationRange] = useState<[number, number]>([0, 30]);
-    const [sortBy, setSortBy] = useState<'date' | 'price-asc' | 'price-desc' | 'name'>('date');
-
+    // Local state for search input (updates on submit, not on every keystroke)
+    const [searchInput, setSearchInput] = useState(activeSearch);
 
     // UI states
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [openSections, setOpenSections] = useState<Set<string>>(new Set(['destinations', 'activities']));
 
-    // Calculate price and duration ranges from tours data
-    const { minPrice, maxPrice, minDuration, maxDuration } = useMemo(() => {
-        let minP = Infinity, maxP = 0, minD = Infinity, maxD = 0;
-
-        tours.forEach((tour) => {
-            const price = getTourPrice(tour);
-            const duration = getTourDuration(tour);
-
-            if (price !== null) {
-                minP = Math.min(minP, price);
-                maxP = Math.max(maxP, price);
-            }
-            if (duration !== null) {
-                minD = Math.min(minD, duration);
-                maxD = Math.max(maxD, duration);
-            }
-        });
-
-        return {
-            minPrice: minP === Infinity ? 0 : minP,
-            maxPrice: maxP === 0 ? 10000 : maxP,
-            minDuration: minD === Infinity ? 1 : minD,
-            maxDuration: maxD === 0 ? 30 : maxD,
-        };
-    }, [tours]);
-
-    // Initialize ranges
-    useEffect(() => {
-        setPriceRange([minPrice, maxPrice]);
-        setDurationRange([minDuration, maxDuration]);
-    }, [minPrice, maxPrice, minDuration, maxDuration]);
-
-    // Initialize from URL params - run after default initialization
-    useEffect(() => {
-        if (!searchParams) return;
-
-        // Handle search query
-        const search = searchParams.get('tour-search');
-        if (search) {
-            setSearchQuery(search);
-        }
-
-        // Handle duration category from home page
-        const category = searchParams.get('tax-tour_category');
-        if (category) {
-            // Parse duration slugs like "1-day-tour", "2-3-days-tours"
-            const match = category.match(/(\d+)(?:-(\d+))?/);
-            if (match) {
-                const min = parseInt(match[1]);
-                const max = match[2] ? parseInt(match[2]) : min;
-                setDurationRange([min, max]);
-            }
-        }
-    }, [searchParams]);
-
     // Build destination tree for hierarchical display
-    const { topLevel: topLevelDestinations, parentMap: destinationChildren } = useMemo(
-        () => buildDestinationTree(destinations),
-        [destinations]
-    );
+    const { topLevel: topLevelDestinations, parentMap: destinationChildren } = buildDestinationTree(destinations);
 
-    // Filter tours based on all criteria
-    const filteredTours = useMemo(() => {
-        let result = tours.filter((tour) => {
-            // Search filter
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                const title = tour.title.rendered.toLowerCase();
-                const excerpt = tour.excerpt?.rendered?.toLowerCase() || '';
-                if (!title.includes(query) && !excerpt.includes(query)) {
-                    return false;
-                }
+    // Helper to build URL with updated params
+    const buildFilterUrl = useCallback((updates: Record<string, string | null>) => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        for (const [key, value] of Object.entries(updates)) {
+            if (value === null || value === '') {
+                params.delete(key);
+            } else {
+                params.set(key, value);
             }
+        }
 
-            // Destination filter
-            if (selectedDestinations.size > 0) {
-                const tourDests = tour.tour_terms?.destinations || [];
-                const hasMatch = tourDests.some((d) => selectedDestinations.has(d.slug));
-                if (!hasMatch) return false;
-            }
+        // Reset to page 1 when filters change (except for page changes)
+        if (!('page' in updates)) {
+            params.delete('page');
+        }
 
-            // Activity filter
-            if (selectedActivities.size > 0) {
-                const tourActs = tour.tour_terms?.activities || [];
-                const hasMatch = tourActs.some((a) => selectedActivities.has(a.slug));
-                if (!hasMatch) return false;
-            }
+        const queryString = params.toString();
+        return queryString ? `${pathname}?${queryString}` : pathname;
+    }, [pathname, searchParams]);
 
-            // Price filter
-            const price = getTourPrice(tour);
-            if (price !== null && (price < priceRange[0] || price > priceRange[1])) {
-                return false;
-            }
+    // Filter handlers - update URL to trigger server-side filtering
+    const handleSearch = useCallback((e: React.FormEvent) => {
+        e.preventDefault();
+        router.push(buildFilterUrl({ search: searchInput || null }));
+    }, [router, buildFilterUrl, searchInput]);
 
-            // Duration filter
-            const duration = getTourDuration(tour);
-            if (duration !== null && (duration < durationRange[0] || duration > durationRange[1])) {
-                return false;
-            }
+    const handleDestinationChange = useCallback((slug: string | null) => {
+        router.push(buildFilterUrl({ destination: slug }));
+        setIsMobileOpen(false);
+    }, [router, buildFilterUrl]);
 
-            return true;
-        });
+    const handleActivityChange = useCallback((slug: string | null) => {
+        router.push(buildFilterUrl({ activity: slug }));
+        setIsMobileOpen(false);
+    }, [router, buildFilterUrl]);
 
-        // Sort results
-        result.sort((a, b) => {
-            switch (sortBy) {
-                case 'price-asc': {
-                    const priceA = getTourPrice(a) ?? Infinity;
-                    const priceB = getTourPrice(b) ?? Infinity;
-                    return priceA - priceB;
-                }
-                case 'price-desc': {
-                    const priceA = getTourPrice(a) ?? 0;
-                    const priceB = getTourPrice(b) ?? 0;
-                    return priceB - priceA;
-                }
-                case 'name':
-                    return a.title.rendered.localeCompare(b.title.rendered);
-                case 'date':
-                default:
-                    return new Date(b.date).getTime() - new Date(a.date).getTime();
-            }
-        });
+    const handleSortChange = useCallback((sort: string) => {
+        router.push(buildFilterUrl({ sort: sort === 'date' ? null : sort }));
+    }, [router, buildFilterUrl]);
 
-        return result;
-    }, [tours, searchQuery, selectedDestinations, selectedActivities, priceRange, durationRange, sortBy]);
+    const clearAllFilters = useCallback(() => {
+        setSearchInput('');
+        router.push(pathname);
+        setIsMobileOpen(false);
+    }, [router, pathname]);
 
-    // Toggle functions
     const toggleSection = useCallback((sectionId: string) => {
         setOpenSections((prev) => {
             const next = new Set(prev);
@@ -237,89 +125,34 @@ export function TourFilterSidebar({
         });
     }, []);
 
-    const toggleDestination = useCallback((slug: string) => {
-        setSelectedDestinations((prev) => {
-            const next = new Set(prev);
-            if (next.has(slug)) {
-                next.delete(slug);
-            } else {
-                next.add(slug);
-            }
-            return next;
-        });
-    }, []);
+    const hasActiveFilters = activeSearch || activeDestination || activeActivity;
 
-    const toggleActivity = useCallback((slug: string) => {
-        setSelectedActivities((prev) => {
-            const next = new Set(prev);
-            if (next.has(slug)) {
-                next.delete(slug);
-            } else {
-                next.add(slug);
-            }
-            return next;
-        });
-    }, []);
-
-    const clearAllFilters = useCallback(() => {
-        setSearchQuery('');
-        setSelectedDestinations(new Set());
-        setSelectedActivities(new Set());
-        setPriceRange([minPrice, maxPrice]);
-        setDurationRange([minDuration, maxDuration]);
-        setSortBy('date');
-    }, [minPrice, maxPrice, minDuration, maxDuration]);
-
-    const hasActiveFilters = searchQuery || selectedDestinations.size > 0 || selectedActivities.size > 0 ||
-        priceRange[0] > minPrice || priceRange[1] < maxPrice ||
-        durationRange[0] > minDuration || durationRange[1] < maxDuration;
-
-    // Count tours per destination/activity for the sidebar
-    const destinationCounts = useMemo(() => {
-        const counts = new Map<string, number>();
-        tours.forEach((tour) => {
-            tour.tour_terms?.destinations?.forEach((d) => {
-                counts.set(d.slug, (counts.get(d.slug) || 0) + 1);
-            });
-        });
-        return counts;
-    }, [tours]);
-
-    const activityCounts = useMemo(() => {
-        const counts = new Map<string, number>();
-        tours.forEach((tour) => {
-            tour.tour_terms?.activities?.forEach((a) => {
-                counts.set(a.slug, (counts.get(a.slug) || 0) + 1);
-            });
-        });
-        return counts;
-    }, [tours]);
-
-    // Render destination with children - using regular function, not component
+    // Render destination with children
     const renderDestination = (dest: WPTourDestination, level: number = 0) => {
         const children = destinationChildren.get(dest.id) || [];
-        const count = destinationCounts.get(dest.slug) || 0;
-        const isSelected = selectedDestinations.has(dest.slug);
+        const isSelected = activeDestination?.slug === dest.slug;
 
         return (
             <div key={dest.id}>
-                <label
-                    className={`flex items-center gap-3 py-2 cursor-pointer hover:text-[#f7941e] transition-colors ${level > 0 ? 'ml-5' : ''
-                        }`}
+                <button
+                    onClick={() => handleDestinationChange(isSelected ? null : dest.slug)}
+                    className={`flex items-center gap-3 py-2 w-full text-left hover:text-[#f7941e] transition-colors ${level > 0 ? 'ml-5' : ''}`}
                 >
-                    <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleDestination(dest.slug)}
-                        className="w-4 h-4 rounded border-gray-300 text-[#f7941e] focus:ring-[#f7941e]"
-                    />
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-[#f7941e] border-[#f7941e]' : 'border-gray-300'
+                        }`}>
+                        {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                        )}
+                    </span>
                     <span className={`flex-1 text-sm ${isSelected ? 'text-[#f7941e] font-medium' : 'text-gray-700'}`}>
                         {dest.name}
                     </span>
                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {count}
+                        {dest.count || 0}
                     </span>
-                </label>
+                </button>
                 {children.length > 0 && (
                     <div className="border-l-2 border-gray-100 ml-2">
                         {children.map((child) => renderDestination(child, level + 1))}
@@ -329,16 +162,16 @@ export function TourFilterSidebar({
         );
     };
 
-    // Filter sidebar content as JSX (not a component to preserve input focus)
+    // Filter sidebar content
     const filterSidebarContent = (
         <div className="space-y-6">
             {/* Search */}
-            <div>
+            <form onSubmit={handleSearch}>
                 <div className="relative">
                     <input
                         type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                         placeholder="Search tours..."
                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f7941e]/20 focus:border-[#f7941e] transition-all bg-gray-50/50"
                     />
@@ -350,18 +183,28 @@ export function TourFilterSidebar({
                     >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    {searchQuery && (
+                    {searchInput && (
                         <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            type="button"
+                            onClick={() => {
+                                setSearchInput('');
+                                router.push(buildFilterUrl({ search: null }));
+                            }}
+                            className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     )}
+                    <button
+                        type="submit"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f7941e] hover:text-[#d67a1a]"
+                    >
+                        <span className="material-icons text-xl">search</span>
+                    </button>
                 </div>
-            </div>
+            </form>
 
             {/* Active Filters Summary */}
             {hasActiveFilters && (
@@ -376,30 +219,27 @@ export function TourFilterSidebar({
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {searchQuery && (
+                        {activeSearch && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs border border-gray-200">
-                                Search: {searchQuery}
-                                <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">×</button>
+                                Search: {activeSearch}
+                                <button onClick={() => {
+                                    setSearchInput('');
+                                    router.push(buildFilterUrl({ search: null }));
+                                }} className="text-gray-400 hover:text-gray-600">×</button>
                             </span>
                         )}
-                        {Array.from(selectedDestinations).map((slug) => {
-                            const dest = destinations.find((d) => d.slug === slug);
-                            return (
-                                <span key={slug} className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs border border-gray-200">
-                                    {dest?.name || slug}
-                                    <button onClick={() => toggleDestination(slug)} className="text-gray-400 hover:text-gray-600">×</button>
-                                </span>
-                            );
-                        })}
-                        {Array.from(selectedActivities).map((slug) => {
-                            const act = activities.find((a) => a.slug === slug);
-                            return (
-                                <span key={slug} className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs border border-gray-200">
-                                    {act?.name || slug}
-                                    <button onClick={() => toggleActivity(slug)} className="text-gray-400 hover:text-gray-600">×</button>
-                                </span>
-                            );
-                        })}
+                        {activeDestination && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs border border-gray-200">
+                                {activeDestination.name}
+                                <button onClick={() => handleDestinationChange(null)} className="text-gray-400 hover:text-gray-600">×</button>
+                            </span>
+                        )}
+                        {activeActivity && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs border border-gray-200">
+                                {activeActivity.name}
+                                <button onClick={() => handleActivityChange(null)} className="text-gray-400 hover:text-gray-600">×</button>
+                            </span>
+                        )}
                     </div>
                 </div>
             )}
@@ -428,7 +268,7 @@ export function TourFilterSidebar({
             </div>
 
             {/* Activities Section */}
-            <div className="border-b border-gray-100 pb-4">
+            <div className="pb-4">
                 <button
                     onClick={() => toggleSection('activities')}
                     className="flex items-center justify-between w-full py-2 text-left"
@@ -446,109 +286,30 @@ export function TourFilterSidebar({
                 {openSections.has('activities') && (
                     <div className="mt-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                         {activities.map((act) => {
-                            const count = activityCounts.get(act.slug) || 0;
-                            const isSelected = selectedActivities.has(act.slug);
+                            const isSelected = activeActivity?.slug === act.slug;
                             return (
-                                <label
+                                <button
                                     key={act.id}
-                                    className="flex items-center gap-3 py-2 cursor-pointer hover:text-[#f7941e] transition-colors"
+                                    onClick={() => handleActivityChange(isSelected ? null : act.slug)}
+                                    className="flex items-center gap-3 py-2 w-full text-left hover:text-[#f7941e] transition-colors"
                                 >
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleActivity(act.slug)}
-                                        className="w-4 h-4 rounded border-gray-300 text-[#f7941e] focus:ring-[#f7941e]"
-                                    />
+                                    <span className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-[#f7941e] border-[#f7941e]' : 'border-gray-300'
+                                        }`}>
+                                        {isSelected && (
+                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                                            </svg>
+                                        )}
+                                    </span>
                                     <span className={`flex-1 text-sm ${isSelected ? 'text-[#f7941e] font-medium' : 'text-gray-700'}`}>
                                         {act.name}
                                     </span>
                                     <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                        {count}
+                                        {act.count || 0}
                                     </span>
-                                </label>
+                                </button>
                             );
                         })}
-                    </div>
-                )}
-            </div>
-
-            {/* Price Range Section */}
-            <div className="border-b border-gray-100 pb-4">
-                <button
-                    onClick={() => toggleSection('price')}
-                    className="flex items-center justify-between w-full py-2 text-left"
-                >
-                    <span className="font-semibold text-gray-900">Price Range</span>
-                    <svg
-                        className={`w-5 h-5 text-gray-500 transition-transform ${openSections.has('price') ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                {openSections.has('price') && (
-                    <div className="mt-4 px-2">
-                        <div className="flex justify-between text-sm text-gray-600 mb-2">
-                            <span>${priceRange[0].toLocaleString()}</span>
-                            <span>${priceRange[1].toLocaleString()}</span>
-                        </div>
-                        <div className="relative">
-                            <input
-                                type="range"
-                                min={minPrice}
-                                max={maxPrice}
-                                value={priceRange[0]}
-                                onChange={(e) => setPriceRange([Math.min(parseInt(e.target.value), priceRange[1] - 100), priceRange[1]])}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f7941e]"
-                            />
-                            <input
-                                type="range"
-                                min={minPrice}
-                                max={maxPrice}
-                                value={priceRange[1]}
-                                onChange={(e) => setPriceRange([priceRange[0], Math.max(parseInt(e.target.value), priceRange[0] + 100)])}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f7941e] -mt-2"
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Duration Section */}
-            <div className="pb-4">
-                <button
-                    onClick={() => toggleSection('duration')}
-                    className="flex items-center justify-between w-full py-2 text-left"
-                >
-                    <span className="font-semibold text-gray-900">Duration</span>
-                    <svg
-                        className={`w-5 h-5 text-gray-500 transition-transform ${openSections.has('duration') ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                {openSections.has('duration') && (
-                    <div className="mt-4 px-2">
-                        <div className="flex justify-between text-sm text-gray-600 mb-3">
-                            <span className="font-medium">Up to {durationRange[1]} {durationRange[1] === 1 ? 'day' : 'days'}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min={minDuration}
-                            max={maxDuration}
-                            value={durationRange[1]}
-                            onChange={(e) => setDurationRange([minDuration, parseInt(e.target.value)])}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f7941e]"
-                        />
-                        <div className="flex justify-between text-xs text-gray-400 mt-1">
-                            <span>{minDuration} {minDuration === 1 ? 'day' : 'days'}</span>
-                            <span>{maxDuration} days</span>
-                        </div>
                     </div>
                 )}
             </div>
@@ -564,9 +325,16 @@ export function TourFilterSidebar({
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Our Tours</h1>
                             <p className="text-gray-600 mt-1">
-                                {filteredTours.length} {filteredTours.length === 1 ? 'tour' : 'tours'} found
-                                {tours.length !== filteredTours.length && (
-                                    <span className="text-gray-400"> (of {tours.length} total)</span>
+                                {hasActiveFilters ? (
+                                    <>
+                                        Found <span className="font-semibold text-[#f7941e]">{totalTours}</span> matching tours
+                                        {currentPage > 1 && ` (Page ${currentPage} of ${totalPages})`}
+                                    </>
+                                ) : (
+                                    <>
+                                        Showing {tours.length} of <span className="font-semibold text-[#f7941e]">{totalTours}</span> tours
+                                        {currentPage > 1 && ` (Page ${currentPage} of ${totalPages})`}
+                                    </>
                                 )}
                             </p>
                         </div>
@@ -583,15 +351,15 @@ export function TourFilterSidebar({
                                 Filters
                                 {hasActiveFilters && (
                                     <span className="bg-[#f7941e] text-white text-xs px-2 py-0.5 rounded-full">
-                                        {selectedDestinations.size + selectedActivities.size + (searchQuery ? 1 : 0)}
+                                        {(activeDestination ? 1 : 0) + (activeActivity ? 1 : 0) + (activeSearch ? 1 : 0)}
                                     </span>
                                 )}
                             </button>
 
                             {/* Sort dropdown */}
                             <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                                value={activeSort}
+                                onChange={(e) => handleSortChange(e.target.value)}
                                 className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f7941e]/20 focus:border-[#f7941e] bg-white"
                             >
                                 <option value="date">Newest First</option>
@@ -646,7 +414,7 @@ export function TourFilterSidebar({
                                         onClick={() => setIsMobileOpen(false)}
                                         className="w-full py-3 bg-[#f7941e] text-white font-semibold rounded-xl hover:bg-[#d67a1a] transition-colors"
                                     >
-                                        Show {filteredTours.length} Tours
+                                        Show {totalTours} Tours
                                     </button>
                                 </div>
                             </div>
@@ -655,7 +423,7 @@ export function TourFilterSidebar({
 
                     {/* Tours Grid */}
                     <main className="flex-1">
-                        {filteredTours.length === 0 ? (
+                        {tours.length === 0 ? (
                             <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -671,7 +439,7 @@ export function TourFilterSidebar({
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {filteredTours.map((tour) => (
+                                {tours.map((tour) => (
                                     <TourCard
                                         key={tour.id}
                                         tour={tour}
@@ -685,27 +453,100 @@ export function TourFilterSidebar({
                                 ))}
                             </div>
                         )}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="mt-12 flex justify-center">
+                                <nav className="flex items-center gap-2">
+                                    {/* Previous Button */}
+                                    <Link
+                                        href={currentPage > 1 ? buildFilterUrl({ page: String(currentPage - 1) }) : '#'}
+                                        className={`px-4 py-2 rounded-lg border transition-all flex items-center gap-1 ${currentPage > 1
+                                                ? 'border-gray-200 hover:border-[#f7941e] hover:text-[#f7941e] bg-white'
+                                                : 'border-gray-100 text-gray-300 bg-gray-50 pointer-events-none'
+                                            }`}
+                                        aria-disabled={currentPage <= 1}
+                                    >
+                                        <span className="material-icons text-sm">chevron_left</span>
+                                        Prev
+                                    </Link>
+
+                                    {/* Page Numbers */}
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                            let pageNum;
+                                            if (totalPages <= 5) {
+                                                pageNum = i + 1;
+                                            } else if (currentPage <= 3) {
+                                                pageNum = i + 1;
+                                            } else if (currentPage >= totalPages - 2) {
+                                                pageNum = totalPages - 4 + i;
+                                            } else {
+                                                pageNum = currentPage - 2 + i;
+                                            }
+
+                                            return (
+                                                <Link
+                                                    key={pageNum}
+                                                    href={buildFilterUrl({ page: String(pageNum) })}
+                                                    className={`w-10 h-10 rounded-lg flex items-center justify-center font-medium transition-all ${pageNum === currentPage
+                                                            ? 'bg-[#f7941e] text-white shadow-lg shadow-orange-200'
+                                                            : 'bg-white border border-gray-200 hover:border-[#f7941e] hover:text-[#f7941e]'
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </Link>
+                                            );
+                                        })}
+                                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                                            <>
+                                                <span className="px-2 text-gray-400">...</span>
+                                                <Link
+                                                    href={buildFilterUrl({ page: String(totalPages) })}
+                                                    className="w-10 h-10 rounded-lg flex items-center justify-center font-medium bg-white border border-gray-200 hover:border-[#f7941e] hover:text-[#f7941e] transition-all"
+                                                >
+                                                    {totalPages}
+                                                </Link>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Next Button */}
+                                    <Link
+                                        href={currentPage < totalPages ? buildFilterUrl({ page: String(currentPage + 1) }) : '#'}
+                                        className={`px-4 py-2 rounded-lg border transition-all flex items-center gap-1 ${currentPage < totalPages
+                                                ? 'border-gray-200 hover:border-[#f7941e] hover:text-[#f7941e] bg-white'
+                                                : 'border-gray-100 text-gray-300 bg-gray-50 pointer-events-none'
+                                            }`}
+                                        aria-disabled={currentPage >= totalPages}
+                                    >
+                                        Next
+                                        <span className="material-icons text-sm">chevron_right</span>
+                                    </Link>
+                                </nav>
+                            </div>
+                        )}
                     </main>
                 </div>
             </div>
 
             {/* Custom scrollbar styles */}
             <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
-      `}</style>
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 2px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #d1d5db;
+                    border-radius: 2px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #9ca3af;
+                }
+            `}</style>
         </div>
     );
 }

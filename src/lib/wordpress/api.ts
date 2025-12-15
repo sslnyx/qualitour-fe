@@ -1,4 +1,5 @@
 import { WPPost, WPPage, WPCategory, WPTag, WPMedia, WPApiParams, WPTour, WPTourCategory, WPTourTag, WPTourActivity, WPTourDestination, WPTourDuration, WPTourType, GoogleReview, PlaceDetails } from './types';
+import { getEdgeCache, setEdgeCache, generateCacheKey, CACHE_TTL } from '../edge-cache';
 
 const TOUR_TAXONOMY_FIELDS = 'id,slug,name,parent,count,description';
 // Note: tours no longer use WP REST `_embed` to avoid large `_embedded` payloads.
@@ -6,6 +7,10 @@ const TOUR_TAXONOMY_FIELDS = 'id,slug,name,parent,count,description';
 const TOUR_LIST_FIELDS = 'id,slug,title,excerpt,featured_media,tour_category,tour_tag,featured_image_url,tour_meta,tour_terms';
 const TOUR_SINGLE_FIELDS =
   'id,slug,title,content,excerpt,featured_media,featured_image_url,tour_meta,goodlayers_data,acf_fields,tour_terms';
+
+// Reduced from 8000ms to 5000ms to prevent Worker resource exhaustion
+// Cloudflare Workers have limited CPU time; long-running requests can trigger 1102 errors
+const DEFAULT_FETCH_TIMEOUT_MS = 5000;
 
 // Helper to get API URL dynamically
 function getApiUrl() {
@@ -99,6 +104,14 @@ async function fetchToursV1(params: Record<string, any>, lang?: string): Promise
   // Stable cache key to avoid reusing poisoned cached responses.
   url.searchParams.set('qt_cache', 'v1');
 
+  // === EDGE CACHE CHECK (fastest, minimal CPU) ===
+  // Try Cloudflare edge cache first - this is super fast and uses almost no CPU
+  const edgeCacheKey = generateCacheKey('tours-v1', { ...params, lang: lang || 'en' });
+  const edgeCached = await getEdgeCache<{ tours: WPTour[]; total: number; totalPages: number }>(edgeCacheKey);
+  if (edgeCached) {
+    return edgeCached;
+  }
+
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
 
   // Add Basic Auth for protected WP endpoints (Workers/Production)
@@ -131,12 +144,12 @@ async function fetchToursV1(params: Record<string, any>, lang?: string): Promise
     return cached.promise;
   }
 
-  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
   const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
   const timeoutId = controller
     ? setTimeout(() => {
-        controller.abort();
-      }, timeoutMs)
+      controller.abort();
+    }, timeoutMs)
     : null;
 
   const promise = (async () => {
@@ -160,7 +173,7 @@ async function fetchToursV1(params: Record<string, any>, lang?: string): Promise
       if (response.status === 401) {
         throw new Error(
           'WordPress API Error: 401 Unauthorized. ' +
-            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
         );
       }
       throw new Error(`WordPress API Error: ${response.status} ${response.statusText}`);
@@ -170,11 +183,19 @@ async function fetchToursV1(params: Record<string, any>, lang?: string): Promise
     const total = Number(response.headers.get('X-WP-Total') || '0');
     const totalPages = Number(response.headers.get('X-WP-TotalPages') || '1');
 
-    return {
+    const result = {
       tours: Array.isArray(tours) ? tours : [],
       total,
       totalPages,
     };
+
+    // === STORE IN EDGE CACHE (async, non-blocking) ===
+    // Cache for 5 minutes at the edge to avoid re-fetching
+    setEdgeCache(edgeCacheKey, result, CACHE_TTL.TOURS_LIST).catch(() => {
+      // Ignore edge cache errors
+    });
+
+    return result;
   })();
 
   requestCache.set(cacheKey, { createdAt: now, promise });
@@ -210,6 +231,14 @@ async function fetchTermsV1(
   // Stable cache key to avoid reusing poisoned cached responses.
   url.searchParams.set('qt_cache', 'v1');
 
+  // === EDGE CACHE CHECK (fastest, minimal CPU) ===
+  // Taxonomies are relatively static - cache for 1 hour at the edge
+  const edgeCacheKey = generateCacheKey(`terms-v1-${taxonomy}`, params);
+  const edgeCached = await getEdgeCache<{ terms: V1TermMinimal[]; total: number; totalPages: number }>(edgeCacheKey);
+  if (edgeCached) {
+    return edgeCached;
+  }
+
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
 
   // Basic Auth for protected WP endpoints
@@ -238,12 +267,12 @@ async function fetchTermsV1(
     return cached.promise;
   }
 
-  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
   const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
   const timeoutId = controller
     ? setTimeout(() => {
-        controller.abort();
-      }, timeoutMs)
+      controller.abort();
+    }, timeoutMs)
     : null;
 
   const promise = (async () => {
@@ -267,7 +296,7 @@ async function fetchTermsV1(
       if (response.status === 401) {
         throw new Error(
           'WordPress API Error: 401 Unauthorized. ' +
-            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS (or make the REST API publicly readable).'
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS (or make the REST API publicly readable).'
         );
       }
       throw new Error(`WordPress API Error: ${response.status} ${response.statusText}`);
@@ -277,10 +306,158 @@ async function fetchTermsV1(
     const total = Number(response.headers.get('X-WP-Total') || '0');
     const totalPages = Number(response.headers.get('X-WP-TotalPages') || '1');
 
-    return {
+    const result = {
       terms: Array.isArray(terms) ? terms : [],
       total,
       totalPages,
+    };
+
+    // === STORE IN EDGE CACHE (async, non-blocking) ===
+    // Taxonomies change rarely - cache for 1 hour at the edge
+    setEdgeCache(edgeCacheKey, result, CACHE_TTL.TAXONOMIES).catch(() => {
+      // Ignore edge cache errors
+    });
+
+    return result;
+  })();
+
+  requestCache.set(cacheKey, { createdAt: now, promise });
+  promise.catch(() => {
+    requestCache.delete(cacheKey);
+  });
+
+  return promise;
+}
+
+/**
+ * Response type from /qualitour/v1/sitenav endpoint
+ */
+export type SiteNavData = {
+  activities: V1TermMinimal[];
+  destinations: V1TermMinimal[];
+  durations: V1TermMinimal[];
+  types: V1TermMinimal[];
+};
+
+/**
+ * Fetch all navigation taxonomies in a single request.
+ * 
+ * This is a major optimization that reduces 4 parallel API calls to 1,
+ * significantly reducing CPU usage on Cloudflare Workers.
+ * 
+ * Returns:
+ * - activities: tour-activity terms (max 15)
+ * - destinations: tour-destination terms (max 30)  
+ * - durations: tour_duration terms (max 10)
+ * - types: tour_type terms (max 10)
+ * 
+ * @param lang - Language code (e.g., 'en', 'zh')
+ */
+export async function getSiteNavData(lang?: string): Promise<{
+  activities: WPTourActivity[];
+  destinations: WPTourDestination[];
+  durations: WPTourDuration[];
+  types: WPTourType[];
+}> {
+  const customApiUrl = getCustomApiUrl();
+  if (!customApiUrl) {
+    throw new Error('Custom API URL is not defined');
+  }
+
+  const url = new URL(`${customApiUrl}/sitenav`);
+  if (lang) {
+    url.searchParams.set('lang', lang);
+  }
+
+  // === EDGE CACHE CHECK (fastest, minimal CPU) ===
+  const edgeCacheKey = generateCacheKey('sitenav-v1', { lang: lang || 'en' });
+  const edgeCached = await getEdgeCache<SiteNavData>(edgeCacheKey);
+  if (edgeCached) {
+    return {
+      activities: edgeCached.activities.map(mapV1TermToTourActivity),
+      destinations: edgeCached.destinations.map(mapV1TermToTourDestination),
+      durations: edgeCached.durations.map(mapV1TermToTourDuration),
+      types: edgeCached.types.map(mapV1TermToTourType),
+    };
+  }
+
+  const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
+
+  // Basic Auth for protected WP endpoints
+  const urlObj = new URL(url.toString());
+  let authHeader: Record<string, string> = {};
+
+  let username = urlObj.username;
+  let password = urlObj.password;
+  if (!username || !password) {
+    username = process.env.WORDPRESS_AUTH_USER || '';
+    password = process.env.WORDPRESS_AUTH_PASS || '';
+  }
+
+  if (username && password) {
+    const credentials = toBase64(`${username}:${password}`);
+    authHeader = { Authorization: `Basic ${credentials}` };
+    urlObj.username = '';
+    urlObj.password = '';
+  }
+
+  // Request-level cache for deduplication
+  const cacheKey = `getSiteNavData:${lang || 'en'}`;
+  const now = Date.now();
+  pruneRequestCache(now);
+  const cached = requestCache.get(cacheKey);
+  if (cached && now - cached.createdAt <= REQUEST_CACHE_TTL_MS) {
+    return cached.promise;
+  }
+
+  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
+  const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => {
+      controller.abort();
+    }, timeoutMs)
+    : null;
+
+  const promise = (async () => {
+    const response = await fetch(urlObj.toString(), {
+      next: { revalidate: 3600 }, // 1 hour ISR for navigation data
+      signal: controller?.signal,
+      headers: {
+        ...authHeader,
+        'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-API/1.0)',
+      },
+    }).finally(() => {
+      if (timeoutId) clearTimeout(timeoutId);
+    });
+
+    if (process.env.NODE_ENV === 'development' && startTime) {
+      const duration = Date.now() - startTime;
+      console.log(`[API] /qualitour/v1/sitenav?lang=${lang || 'en'} - ${duration}ms - ${response.status}`);
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error(
+          'WordPress API Error: 401 Unauthorized. ' +
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS (or make the REST API publicly readable).'
+        );
+      }
+      throw new Error(`WordPress API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as SiteNavData;
+
+    // === STORE IN EDGE CACHE (async, non-blocking) ===
+    // Navigation data rarely changes - cache for 1 hour at the edge
+    setEdgeCache(edgeCacheKey, data, CACHE_TTL.TAXONOMIES).catch(() => {
+      // Ignore edge cache errors
+    });
+
+    return {
+      activities: Array.isArray(data.activities) ? data.activities.map(mapV1TermToTourActivity) : [],
+      destinations: Array.isArray(data.destinations) ? data.destinations.map(mapV1TermToTourDestination) : [],
+      durations: Array.isArray(data.durations) ? data.durations.map(mapV1TermToTourDuration) : [],
+      types: Array.isArray(data.types) ? data.types.map(mapV1TermToTourType) : [],
     };
   })();
 
@@ -444,6 +621,8 @@ export async function getToursPaged(
  * Request-level cache to prevent duplicate API calls during single render
  * NOTE: In Edge/Worker runtimes, module scope can persist across requests.
  * Keep this cache bounded + short-lived to avoid memory growth (Cloudflare 1102).
+ * 
+ * AGGRESSIVE LIMITS: Reduced to prevent Worker resource exhaustion during rapid navigation.
  */
 type RequestCacheEntry = {
   createdAt: number;
@@ -451,25 +630,35 @@ type RequestCacheEntry = {
 };
 
 const requestCache = new Map<string, RequestCacheEntry>();
-const REQUEST_CACHE_MAX_ENTRIES = 200;
-const REQUEST_CACHE_TTL_MS = 15_000;
+// Reduced from 200 to 100 to limit memory usage
+const REQUEST_CACHE_MAX_ENTRIES = 100;
+// Reduced from 15s to 5s - aggressive cleanup for rapid navigation
+const REQUEST_CACHE_TTL_MS = 5_000;
 
 function pruneRequestCache(now: number) {
-  // Drop expired entries first.
+  // Quick exit if cache is small
+  if (requestCache.size === 0) return;
+
+  // Drop expired entries first - using simple iteration (more CPU efficient)
+  const keysToDelete: string[] = [];
   for (const [key, entry] of requestCache) {
     if (now - entry.createdAt > REQUEST_CACHE_TTL_MS) {
-      requestCache.delete(key);
+      keysToDelete.push(key);
     }
   }
+  for (const key of keysToDelete) {
+    requestCache.delete(key);
+  }
 
-  // If still too large, remove oldest entries.
-  if (requestCache.size <= REQUEST_CACHE_MAX_ENTRIES) return;
-
-  const entries = Array.from(requestCache.entries());
-  entries.sort((a, b) => a[1].createdAt - b[1].createdAt);
-  const overflow = requestCache.size - REQUEST_CACHE_MAX_ENTRIES;
-  for (let i = 0; i < overflow; i++) {
-    requestCache.delete(entries[i]![0]);
+  // If still too large, clear oldest half (simpler than sorting)
+  if (requestCache.size > REQUEST_CACHE_MAX_ENTRIES) {
+    const toRemove = Math.floor(requestCache.size / 2);
+    let removed = 0;
+    for (const key of requestCache.keys()) {
+      if (removed >= toRemove) break;
+      requestCache.delete(key);
+      removed++;
+    }
   }
 }
 
@@ -480,7 +669,7 @@ function getCacheKey(endpoint: string, params: WPApiParams): string {
       acc[key] = (params as Record<string, any>)[key];
       return acc;
     }, {} as Record<string, any>);
-  
+
   return `${endpoint}:${JSON.stringify(sortedParams)}`;
 }
 
@@ -499,9 +688,9 @@ function getRevalidateTime(endpoint: string): number | false {
     endpoint.includes('tour-type')
   ) return 3600; // 1 hour
 
-	// Custom v1 terms endpoint
-	if (endpoint.includes('/terms')) return 3600;
-  
+  // Custom v1 terms endpoint
+  if (endpoint.includes('/terms')) return 3600;
+
   // Everything else (taxonomies, posts, pages) should be static (cache forever)
   // to avoid Edge Runtime requirement and keep worker size down.
   return false;
@@ -511,6 +700,7 @@ function getRevalidateTime(endpoint: string): number | false {
  * Generic fetch function for WordPress REST API with optimizations
  * 
  * Optimizations:
+ * - EDGE CACHING: Cloudflare Cache API for instant responses with minimal CPU
  * - Request-level deduplication: prevents duplicate API calls in same render
  * - Incremental Static Regeneration: smart revalidation based on content type
  * - Supports _fields parameter to reduce payload by 70%
@@ -519,7 +709,18 @@ function getRevalidateTime(endpoint: string): number | false {
  * - Automatic error handling with fallbacks
  */
 async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: RequestInit = {}) {
-  // Check request-level cache first
+  // === EDGE CACHE CHECK (fastest, minimal CPU) ===
+  // Determine TTL based on endpoint type
+  const edgeTtl = endpoint.includes('/posts') || endpoint.includes('/pages')
+    ? CACHE_TTL.STATIC_PAGES
+    : CACHE_TTL.TAXONOMIES;
+  const edgeCacheKey = generateCacheKey(`wp-api${endpoint}`, params as Record<string, any>);
+  const edgeCached = await getEdgeCache<any>(edgeCacheKey);
+  if (edgeCached) {
+    return edgeCached;
+  }
+
+  // Check request-level cache (in-memory dedup for same render cycle)
   const cacheKey = getCacheKey(endpoint, params);
   const now = Date.now();
   pruneRequestCache(now);
@@ -536,7 +737,7 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
   }
 
   const url = new URL(`${apiUrl}${endpoint}`);
-  
+
   // Add query parameters
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -555,16 +756,16 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
     // Extract credentials from URL if present (for Local Live Link)
     const urlObj = new URL(url.toString());
     let authHeader = {};
-    
+
     // Try to get credentials from URL first, then from environment variables
     let username = urlObj.username;
     let password = urlObj.password;
-    
+
     if (!username || !password) {
       username = process.env.WORDPRESS_AUTH_USER || '';
       password = process.env.WORDPRESS_AUTH_PASS || '';
     }
-    
+
     if (username && password) {
       const credentials = toBase64(`${username}:${password}`);
       authHeader = { 'Authorization': `Basic ${credentials}` };
@@ -575,20 +776,20 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
 
     const revalidateTime = getRevalidateTime(endpoint);
 
-    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
     const controller = !options.signal && Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
     const timeoutId = controller
       ? setTimeout(() => {
-          controller.abort();
-        }, timeoutMs)
+        controller.abort();
+      }, timeoutMs)
       : null;
 
     const response = await fetch(urlObj.toString(), {
       // Smart ISR revalidation based on endpoint type
       // If revalidateTime is false, use force-cache (Static)
       // If revalidateTime is a number, use next: { revalidate: n } (ISR)
-      ...(revalidateTime === false 
-        ? { cache: 'force-cache' } 
+      ...(revalidateTime === false
+        ? { cache: 'force-cache' }
         : { next: { revalidate: revalidateTime } }
       ),
       ...options,
@@ -614,13 +815,20 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
       if (response.status === 401) {
         throw new Error(
           'WordPress API Error: 401 Unauthorized. ' +
-            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
         );
       }
       throw new Error(`WordPress API Error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    const result = await response.json();
+
+    // === STORE IN EDGE CACHE (async, non-blocking) ===
+    setEdgeCache(edgeCacheKey, result, edgeTtl).catch(() => {
+      // Ignore edge cache errors
+    });
+
+    return result;
   })();
 
   // Store promise in cache (bounded/TTL)
@@ -630,7 +838,7 @@ async function fetchAPI(endpoint: string, params: WPApiParams = {}, options: Req
   promise.catch(() => {
     requestCache.delete(cacheKey);
   });
-  
+
   return promise;
 }
 
@@ -821,7 +1029,7 @@ export async function getTours(params: WPApiParams = {}, lang?: string): Promise
     if (unsupportedKeys.length > 0) {
       throw new Error(
         `getTours: unsupported params for qualitour/v1: ${unsupportedKeys.join(', ')}. ` +
-          'Add support to /wp-json/qualitour/v1/tours instead of falling back to wp/v2.'
+        'Add support to /wp-json/qualitour/v1/tours instead of falling back to wp/v2.'
       );
     }
 
@@ -840,7 +1048,7 @@ export async function getTours(params: WPApiParams = {}, lang?: string): Promise
 
   // For list views, only fetch essential fields to reduce payload
   const isListView = !safeParams.slug && (safeParams.per_page || 0) > 1;
-  
+
   if (isListView) {
     const result = await fetchAPI('/tour', {
       // Only fetch fields needed for tour cards
@@ -853,7 +1061,7 @@ export async function getTours(params: WPApiParams = {}, lang?: string): Promise
     }
     return result;
   }
-  
+
   return fetchAPI('/tour', {
     ...(lang && { lang }),
     ...safeParams,
@@ -902,6 +1110,14 @@ export async function getTourBySlug(slug: string, lang?: string): Promise<WPTour
     encodedSlug = slug;
   }
 
+  // === EDGE CACHE CHECK (fastest, minimal CPU) ===
+  // Single tour pages are expensive to render - cache at edge for 10 minutes
+  const edgeCacheKey = generateCacheKey('tour-single', { slug: encodedSlug, lang: lang || 'en' });
+  const edgeCached = await getEdgeCache<WPTour | null>(edgeCacheKey);
+  if (edgeCached !== null) {
+    return edgeCached;
+  }
+
   const customApiUrl = getCustomApiUrl();
   if (customApiUrl) {
     const url = new URL(`${customApiUrl}/tours/slug/${encodedSlug}`);
@@ -939,12 +1155,12 @@ export async function getTourBySlug(slug: string, lang?: string): Promise<WPTour
       return cached.promise;
     }
 
-    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+    const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
     const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
     const timeoutId = controller
       ? setTimeout(() => {
-          controller.abort();
-        }, timeoutMs)
+        controller.abort();
+      }, timeoutMs)
       : null;
 
     const promise = (async () => {
@@ -969,14 +1185,24 @@ export async function getTourBySlug(slug: string, lang?: string): Promise<WPTour
         if (response.status === 401) {
           throw new Error(
             'Tour API Error: 401 Unauthorized. ' +
-              'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
           );
         }
         throw new Error(`Tour API Error: ${response.status} ${response.statusText}`);
       }
 
       const tour = (await response.json()) as WPTour;
-      return tour || null;
+      const result = tour || null;
+
+      // === STORE IN EDGE CACHE (async, non-blocking) ===
+      // Cache single tour for 10 minutes at the edge
+      if (result) {
+        setEdgeCache(edgeCacheKey, result, CACHE_TTL.TOUR_SINGLE).catch(() => {
+          // Ignore edge cache errors
+        });
+      }
+
+      return result;
     })();
 
     requestCache.set(cacheKey, { createdAt: now, promise });
@@ -1028,12 +1254,12 @@ export async function getTourById(id: number): Promise<WPTour | null> {
         urlObj.password = '';
       }
 
-      const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+      const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
       const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
       const timeoutId = controller
         ? setTimeout(() => {
-            controller.abort();
-          }, timeoutMs)
+          controller.abort();
+        }, timeoutMs)
         : null;
 
       const res = await fetch(urlObj.toString(), {
@@ -1354,11 +1580,11 @@ export async function getTourDestinationBySlug(slug: string, lang?: string): Pro
     const destinations = await fetchAPI('/tour-destination', { slug, _fields: TOUR_TAXONOMY_FIELDS });
     resolvedTerm = destinations[0] || null;
   }
-  
+
   if (!resolvedTerm || !lang) {
     return resolvedTerm;
   }
-  
+
   // For language-specific requests, get the actual count for that language
   // by querying tours with the destination and language filter
   try {
@@ -1420,12 +1646,12 @@ export async function getRelatedDestinations(slug: string): Promise<WPTourDestin
     'yellowknife': [],
     'kenya': [],
   };
-  
+
   const slugs = relatedSlugs[slug] || [];
   if (slugs.length === 0) {
     return [];
   }
-  
+
   const destinations = await Promise.all(slugs.map((relatedSlug) => getTourDestinationBySlug(relatedSlug)));
   return destinations.filter((d): d is WPTourDestination => d != null);
 }
@@ -1456,7 +1682,7 @@ export function getDestinationKeywords(slug: string): string[] {
     'america': ['america', 'hawaii', 'panama'],
     'usa': ['usa', 'united states'],
   };
-  
+
   return keywordMap[slug] || [];
 }
 
@@ -1695,12 +1921,12 @@ export async function searchToursAdvanced(options: {
     return cached.promise;
   }
 
-  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || 8000);
+  const timeoutMs = Number(process.env.WP_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS);
   const controller = Number.isFinite(timeoutMs) && timeoutMs > 0 ? new AbortController() : null;
   const timeoutId = controller
     ? setTimeout(() => {
-        controller.abort();
-      }, timeoutMs)
+      controller.abort();
+    }, timeoutMs)
     : null;
 
   const promise = (async () => {
@@ -1724,7 +1950,7 @@ export async function searchToursAdvanced(options: {
       if (response.status === 401) {
         throw new Error(
           'Search API Error: 401 Unauthorized. ' +
-            'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
+          'Set WORDPRESS_AUTH_USER/WORDPRESS_AUTH_PASS in the Worker (or make the REST API publicly readable).'
         );
       }
       throw new Error(`Search API Error: ${response.status} ${response.statusText}`);
@@ -1857,7 +2083,7 @@ export async function getToursByType(type: string, params: WPApiParams = {}, lan
       if (tours.length > 0) {
         // For attraction-tickets, filter to only include tours with "Ticket" in title
         if (type === 'attraction-tickets') {
-          return tours.filter(tour => 
+          return tours.filter(tour =>
             tour.title.rendered.toLowerCase().includes('ticket') ||
             tour.title.rendered.toLowerCase().includes('admission')
           );
@@ -1904,7 +2130,7 @@ export async function getToursByType(type: string, params: WPApiParams = {}, lan
           // Apply exclusion filter if specified
           if (config.excludeKeywords) {
             const titleLower = tour.title.rendered.toLowerCase();
-            const shouldExclude = config.excludeKeywords.some(exclude => 
+            const shouldExclude = config.excludeKeywords.some(exclude =>
               titleLower.includes(exclude.toLowerCase())
             );
             if (shouldExclude) {
@@ -1969,7 +2195,7 @@ export async function getToursByDuration(durationSlug: string, params: WPApiPara
   // Fetch all tours and filter by duration
   // WordPress REST API max is 100 per_page, so fetch up to 200 tours to ensure we get most of them
   let allTours: WPTour[] = [];
-  
+
   // Fetch first batch
   const batch1 = await getTours({
     _embed: true,
@@ -1982,7 +2208,7 @@ export async function getToursByDuration(durationSlug: string, params: WPApiPara
   if (process.env.NODE_ENV === 'development') {
     console.log(`[getToursByDuration] Batch 1: ${batch1.length} tours, slug: ${durationSlug}`);
   }
-  
+
   // Fetch second batch if there are likely more tours
   if (batch1.length === 100) {
     try {
@@ -2017,7 +2243,7 @@ export async function getToursByDuration(durationSlug: string, params: WPApiPara
 
   const filtered = tours.filter(tour => {
     const days = extractTourDays(tour);
-    
+
     let matches = false;
     switch (durationSlug) {
       case 'single-day':
@@ -2036,7 +2262,7 @@ export async function getToursByDuration(durationSlug: string, params: WPApiPara
         matches = days >= 30;
         break;
     }
-    
+
     return matches;
   });
 
@@ -2068,7 +2294,7 @@ function extractTourDays(tour: WPTour): number {
   // Try parsing from title - look for "X Days" or "X Day"
   const titleRendered = tour.title?.rendered || tour.title || '';
   const titleLower = typeof titleRendered === 'string' ? titleRendered.toLowerCase() : '';
-  
+
   // Match patterns like "4 Days", "8 Days/7 Nights", "27 Days"
   const daysMatch = titleLower.match(/(\d+)\s*days?(?:\/|[^0-9]|$)/i);
   if (daysMatch) {
@@ -2139,7 +2365,7 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
 
   try {
     const url = new URL(`${customApiUrl}/google-reviews`);
-    
+
     // Handle Basic Auth for Local Live Link
     let authHeader = {};
     let username = url.username;
@@ -2156,10 +2382,10 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
       url.username = '';
       url.password = '';
     }
-    
+
     const response = await fetch(
       url.toString(),
-      { 
+      {
         cache: 'force-cache',
         headers: {
           ...authHeader
@@ -2173,7 +2399,7 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
     }
 
     const reviews = await response.json();
-    
+
     if (!Array.isArray(reviews)) {
       console.warn('[Reviews] Unexpected response format');
       return [];
@@ -2193,7 +2419,7 @@ export async function getGoogleReviews(): Promise<GoogleReview[]> {
  */
 export async function getBusinessReviews(): Promise<PlaceDetails | null> {
   const reviews = await getGoogleReviews();
-  
+
   if (!reviews || reviews.length === 0) {
     console.warn('[Reviews] No reviews available');
     return null;
