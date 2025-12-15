@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { WPTour } from '@/lib/wordpress';
+import { ContentWithImageCarousel } from './ContentWithImageCarousel';
 
 export default function TourFAQ({ tour }: { tour: WPTour }) {
   const [openIndex, setOpenIndex] = useState<number>(-1);
@@ -20,7 +21,7 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
 
   // Extract accordion items (FAQs)
   const faqItems: Array<{ title: string; content: string }> = [];
-  
+
   if (faqSection && 'items' in faqSection) {
     faqSection.items?.forEach((item: any) => {
       // Check for both 'accordion' (actual FAQ element) and 'toggle-box' (fallback)
@@ -56,9 +57,9 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
         <div className="space-y-3">
           {faqItems.map((item, idx) => {
             const isOpen = openIndex === idx;
-            
+
             return (
-              <div 
+              <div
                 key={idx}
                 className="border border-gray-200 rounded-lg overflow-hidden"
               >
@@ -67,10 +68,10 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
                   className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors text-left"
                 >
                   <span className="font-semibold text-gray-900 pr-4">{item.title}</span>
-                  <svg 
+                  <svg
                     className={`w-5 h-5 text-gray-400 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -79,9 +80,9 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
 
                 {isOpen && (
                   <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <div 
+                    <ContentWithImageCarousel
+                      content={item.content}
                       className="prose max-w-none"
-                      dangerouslySetInnerHTML={{ __html: item.content }}
                     />
                   </div>
                 )}
@@ -95,9 +96,9 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
       {tourFAQ && (
         <div>
           <h4 className="text-lg font-semibold text-gray-900 mb-3">Additional Information</h4>
-          <div 
+          <ContentWithImageCarousel
+            content={tourFAQ}
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: tourFAQ }}
           />
         </div>
       )}
@@ -111,9 +112,9 @@ export default function TourFAQ({ tour }: { tour: WPTour }) {
             </svg>
             Terms &amp; Conditions
           </h4>
-          <div 
+          <ContentWithImageCarousel
+            content={tourTerms}
             className="prose prose-sm prose-amber max-w-none"
-            dangerouslySetInnerHTML={{ __html: tourTerms }}
           />
         </div>
       )}

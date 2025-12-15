@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import { formatDate } from '@/lib/utils';
 import FeaturedToursCarousel from '@/components/FeaturedToursCarousel';
+import FeaturedGoogleReview from '@/components/FeaturedGoogleReview';
 import type { Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 import { getLocalePrefix } from '@/i18n/config';
@@ -27,16 +28,13 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
   }
 
   try {
-    // Fetch ALL tours tagged as "featured" for the carousel
     const featuredTag = await getTourTagBySlug('featured-tour');
-
     if (featuredTag) {
       tours = await getTours({
-        per_page: 12, // Keep homepage light; tag currently has ~11 tours
+        per_page: 12,
         tour_tag: featuredTag.id
       }, lang);
     } else {
-      // Fallback: show latest tours if no featured tag exists
       tours = await getTours({ per_page: 12 }, lang);
     }
   } catch (e) {
@@ -44,17 +42,71 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
     console.error('Error fetching tours:', e);
   }
 
+  const t = {
+    heroTagline: 'QUALITOUR',
+    heroTitle: lang === 'zh' ? '重新出發' : 'Explore Again',
+    heroSubtitle: lang === 'zh' ? '发现并预订难忘的旅行体验' : 'Discover and book unforgettable travel experiences',
+    searchPlaceholder: lang === 'zh' ? '搜索目的地或行程...' : 'Search destinations or tours...',
+    whyChooseUs: lang === 'zh' ? '为什么选择我们' : 'Why Choose Qualitour',
+    guidedTours: lang === 'zh' ? '专业导游' : 'Professional Guides',
+    guidedToursDesc: lang === 'zh' ? '经验丰富的本地导游带您探索' : 'Experienced local guides for authentic experiences',
+    smallGroups: lang === 'zh' ? '小团出行' : 'Small Groups',
+    smallGroupsDesc: lang === 'zh' ? '亲密的家庭式小团体旅行' : 'Intimate travel with family and friends',
+    premiumService: lang === 'zh' ? '优质服务' : 'Premium Service',
+    premiumServiceDesc: lang === 'zh' ? '从预订到旅程结束全程服务' : '24/7 support from booking to return',
+    bestValue: lang === 'zh' ? '超值价格' : 'Best Value',
+    bestValueDesc: lang === 'zh' ? '质优价廉的旅游体验' : 'Quality experiences at competitive prices',
+    privateTransfers: lang === 'zh' ? '私人接送服务' : 'Private Transfer Services',
+    transfersSubtitle: lang === 'zh' ? '小团体私人接送，最多可容纳14人' : 'Specialized in small group transfers for up to 14 passengers',
+    perVehicle: lang === 'zh' ? '每车' : 'per vehicle',
+    viewAllTransfers: lang === 'zh' ? '查看全部接送服务' : 'View All Transfers',
+    featuredTours: lang === 'zh' ? '精选行程' : 'Featured Tours',
+    featuredToursSubtitle: lang === 'zh' ? '探索我们最受欢迎的旅游套餐' : 'Explore our most popular tour packages',
+    viewAllTours: lang === 'zh' ? '查看全部行程' : 'View All Tours',
+    customerReviews: lang === 'zh' ? '客户评价' : 'What Our Customers Say',
+    reviewsSubtitle: lang === 'zh' ? '真实旅客的真实体验' : 'Real experiences from real travelers',
+    readyToExplore: lang === 'zh' ? '准备好开始探索了吗？' : 'Ready to Start Your Adventure?',
+    ctaSubtitle: lang === 'zh' ? '让我们帮您规划一次难忘的旅程' : 'Let us help you plan an unforgettable journey',
+    browseAllTours: lang === 'zh' ? '浏览所有行程' : 'Browse All Tours',
+    contactUs: lang === 'zh' ? '联系我们' : 'Contact Us',
+  };
+
+  const whyUsItems = [
+    { icon: 'explore', title: t.guidedTours, desc: t.guidedToursDesc },
+    { icon: 'groups', title: t.smallGroups, desc: t.smallGroupsDesc },
+    { icon: 'support_agent', title: t.premiumService, desc: t.premiumServiceDesc },
+    { icon: 'verified', title: t.bestValue, desc: t.bestValueDesc },
+  ];
+
+  const transferRoutes = [
+    {
+      from: 'Vancouver Airport (YVR)',
+      to: 'Whistler',
+      price: '465',
+      activityId: '18',
+      icon: 'flight_land',
+    },
+    {
+      from: 'Greater Vancouver',
+      to: 'Whistler',
+      price: '435',
+      activityId: '16',
+      icon: 'downhill_skiing',
+    },
+    {
+      from: 'Whistler',
+      to: 'YVR / Vancouver',
+      price: '435',
+      activityId: '20',
+      icon: 'flight_takeoff',
+    },
+  ];
+
   return (
     <>
-      {/* Hero Section */}
-      <section
-        className="relative text-white"
-        style={{
-          paddingTop: '165px',
-          paddingBottom: '165px',
-        }}
-      >
-        {/* Hero Background Image - Optimized for LCP */}
+      {/* Hero Section - Premium Dark Theme */}
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden">
+        {/* Background Image with Overlay */}
         <img
           src={HeroBackground.src}
           alt=""
@@ -63,191 +115,201 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
           className="absolute inset-0 w-full h-full object-cover object-bottom"
           style={{ zIndex: -2 }}
         />
-        <div className="absolute inset-0 bg-black/50" style={{ zIndex: -1 }}></div>
-        <Container className="relative z-10">
-          <div className="max-w-4xl mx-auto text-center" style={{ paddingBottom: '50px' }}>
-            <h2 className="font-kaushan text-white" style={{ fontSize: '60px', fontWeight: 600, textTransform: 'none' }}>
-              Explore Again
-            </h2>
-            <span className="block text-white" style={{ fontSize: '35px', fontWeight: 600, fontStyle: 'normal', marginTop: '5px' }}>
-              Discover and book amazing trips
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" style={{ zIndex: -1 }} />
+
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-20 w-96 h-96 bg-[#f7941e]/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-40 left-10 w-64 h-64 bg-[#f7941e]/10 rounded-full blur-3xl" />
+
+        <Container className="relative z-10 py-20">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#f7941e]/20 backdrop-blur-sm rounded-full text-[#f7941e] text-sm font-bold tracking-widest mb-6">
+              <span className="material-icons text-lg">public</span>
+              {t.heroTagline}
             </span>
-          </div>
-          <div className="max-w-4xl mx-auto">
-            <form className="bg-white rounded-md p-2 flex flex-col md:flex-row items-center gap-0.5 shadow-lg" action={`/${lang}/search-tours/`} method="GET">
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-kaushan text-white mb-6 leading-tight">
+              {t.heroTitle}
+            </h1>
+
+            <p className="text-xl md:text-2xl text-white/80 mb-10 leading-relaxed">
+              {t.heroSubtitle}
+            </p>
+
+            {/* Search Bar */}
+            <form
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-2 flex flex-col md:flex-row items-center gap-2 border border-white/20"
+              action={`/${lang}/tours`}
+              method="GET"
+            >
               <div className="relative grow w-full md:w-auto">
+                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-white/50">search</span>
                 <input
                   type="text"
                   name="tour-search"
-                  placeholder="Keywords"
-                  className="w-full px-4 py-3 text-gray-700 focus:outline-none rounded-l-md"
+                  placeholder={t.searchPlaceholder}
+                  className="w-full pl-12 pr-4 py-4 bg-transparent text-white placeholder-white/50 focus:outline-none"
                 />
               </div>
-              <div className="relative grow w-full md:w-auto">
+              <div className="relative w-full md:w-auto">
                 <select
                   name="tax-tour_category"
-                  className="w-full px-4 py-3 text-gray-700 bg-white focus:outline-none appearance-none"
+                  className="w-full md:w-48 px-4 py-4 text-white bg-white/10 rounded-xl focus:outline-none appearance-none cursor-pointer"
                 >
-                  <option value="">{dict.tours.category}</option>
-                  <option value="1-day-tour">1 Day Tour</option>
-                  <option value="2-3-days-tours">2-3 Days Tours</option>
-                  <option value="2-4-hour-tour">2-4 hour tour</option>
-                  <option value="4-6-days-tours">4-6 Days Tours</option>
-                  <option value="7-9-days-tours">7-9 Days Tours</option>
-                  <option value="viking-tours">Viking Tours</option>
+                  <option value="" className="text-gray-900">{dict.tours.category}</option>
+                  <option value="1-day-tour" className="text-gray-900">1 Day Tour</option>
+                  <option value="2-3-days-tours" className="text-gray-900">2-3 Days Tours</option>
+                  <option value="4-6-days-tours" className="text-gray-900">4-6 Days Tours</option>
+                  <option value="7-9-days-tours" className="text-gray-900">7-9 Days Tours</option>
                 </select>
-                <svg className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-                </svg>
+                <span className="material-icons absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">expand_more</span>
               </div>
-              <div className="shrink-0">
-                <button type="submit" className="w-full md:w-auto bg-[#f7941e] hover:bg-[#e68a1c] text-white px-8 py-3 font-semibold uppercase transition-colors rounded-r-md">
+              <button
+                type="submit"
+                className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-orange-500/30 transition-all"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span className="material-icons">search</span>
                   {dict.common.search}
-                </button>
-              </div>
+                </span>
+              </button>
             </form>
+
+            {/* Quick Stats */}
+            <div className="flex flex-wrap gap-8 mt-10 items-center">
+              <div className="text-white/90">
+                <span className="text-3xl font-bold text-[#f7941e]">500+</span>
+                <p className="text-white/60 text-sm">{lang === 'zh' ? '满意客户' : 'Happy Travelers'}</p>
+              </div>
+              <div className="text-white/90">
+                <span className="text-3xl font-bold text-[#f7941e]">50+</span>
+                <p className="text-white/60 text-sm">{lang === 'zh' ? '精选行程' : 'Tour Packages'}</p>
+              </div>
+              <div className="text-white/90">
+                <div className="flex gap-1 min-h-[35.5px] items-center">
+                  {[...Array(4)].map((_, i) => (
+                    <span key={i} className="material-icons text-2xl text-[#f7941e]">star</span>
+                  ))}
+                  <span className="material-icons text-2xl text-transparent bg-clip-text bg-[linear-gradient(to_right,#f7941e_80%,rgba(255,255,255,0.4)_80%)]">
+                    star
+                  </span>
+                </div>
+                <p className="text-white/60 text-sm">{lang === 'zh' ? '客户评分' : 'Customer Rating'}</p>
+              </div>
+            </div>
+          </div>
+        </Container>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 animate-bounce">
+          <span className="material-icons text-3xl">keyboard_arrow_down</span>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-20 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-orange-50 to-transparent" />
+
+        <Container className="relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{t.whyChooseUs}</h2>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] mx-auto rounded-full" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {whyUsItems.map((item, idx) => (
+              <div key={idx} className="group text-center p-8 rounded-2xl hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 transition-all duration-300">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#f7941e] to-[#ff6b35] rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200/50 group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-icons text-white text-3xl">{item.icon}</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-500">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </Container>
       </section>
 
-      {/* Features Section */}
-      <div className="relative">
-        <section
-          className="bg-[#f7941e] text-white rounded-md mx-auto relative z-20"
-          style={{
-            marginTop: '-40px',
-            marginRight: 'auto',
-            marginLeft: 'auto',
-            padding: '50px 20px 0px 30px',
-            maxWidth: '1200px',
-            borderRadius: '3px'
-          }}
-        >
-          <Container>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="flex items-start gap-4" style={{ paddingBottom: '30px' }}>
-                <i className="fa fa-map-marker" style={{ color: '#ffffff', fontSize: '17px' }}></i>
-                <div>
-                  <h3 className="font-bold" style={{ fontSize: '13px', letterSpacing: '2px', marginBottom: '10px' }}>GUIDED TOURS</h3>
-                  <p className="text-sm" style={{ textTransform: 'none' }}>Explore the best of Canada with experienced local tour guides</p>
-                  <Link href={`/${lang}/tours`} className="text-white underline hover:no-underline text-sm mt-2 inline-block">
-                    Browse Tours →
-                  </Link>
-                </div>
-              </div>
-              <div className="flex items-start gap-4" style={{ paddingBottom: '30px' }}>
-                <i className="fa fa-bus" style={{ color: '#ffffff', fontSize: '17px' }}></i>
-                <div>
-                  <h3 className="font-bold" style={{ fontSize: '13px', letterSpacing: '2px', marginBottom: '10px' }}>MINI TOUR</h3>
-                  <p className="text-sm" style={{ textTransform: 'none' }}>Travel in small group tours with family and friends only</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4" style={{ paddingBottom: '30px' }}>
-                <i className="fa fa-snowflake-o" style={{ color: '#ffffff', fontSize: '17px' }}></i>
-                <div>
-                  <h3 className="font-bold" style={{ fontSize: '13px', letterSpacing: '2px', marginBottom: '10px' }}>SKI SHUTTLES</h3>
-                  <p className="text-sm" style={{ textTransform: 'none' }}>Private transfers between Vancouver and your favourite ski resorts</p>
-                </div>
-              </div>
-            </div>
-          </Container>
-        </section>
-      </div>
-
       {/* Private Transfers Section */}
-      <section className="py-16" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
+      <section className="py-20 bg-gray-50">
         <Container>
-          <div className="text-center mb-0" style={{ paddingBottom: '0px' }}>
-            <h3 className="text-text-heading" style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '0px', textTransform: 'none' }}>
+          <div className="text-center mb-16">
+            <span className="text-[#f7941e] font-bold tracking-widest uppercase text-sm mb-2 block">
               {dict.navigation.privateTransfers}
-            </h3>
-            <p className="text-gray-400 italic mt-2">
-              {lang === 'zh'
-                ? '小团体私人接送（最多可容纳 14 人）'
-                : 'We specialize in small group private transfers which may accommodate up to 14 people'}
-            </p>
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{t.privateTransfers}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">{t.transfersSubtitle}</p>
           </div>
 
-          <div style={{ paddingTop: '30px' }}></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {transferRoutes.map((route, idx) => (
+              <div
+                key={idx}
+                className="group relative bg-white rounded-2xl border border-gray-200 p-6 hover:border-[#f7941e]/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+              >
+                {/* Decorative corner */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#f7941e]/10 to-transparent rounded-bl-full" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Transfer 1 */}
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
-              <h3 className="text-text-heading mb-4" style={{ fontSize: '20px', fontWeight: 500, textTransform: 'none', lineHeight: '1.6' }}>
-                Vancouver (YVR) Airport<br />
-                to<br />
-                Whistler
-              </h3>
-              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
-                {lang === 'zh' ? '每车 $465 起' : 'From $465 (per vehicle)'}
-              </div>
-              <TransferBookingModalButton
-                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
-                activityId="18"
-                localePrefix={localePrefix}
-                lang={lang}
-              />
-            </div>
+                {/* Icon */}
+                <div className="w-14 h-14 bg-gradient-to-br from-[#f7941e]/10 to-orange-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="material-icons text-[#f7941e] text-2xl">{route.icon}</span>
+                </div>
 
-            {/* Transfer 2 */}
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
-              <h3 className="text-text-heading mb-4" style={{ fontSize: '20px', fontWeight: 500, textTransform: 'none', lineHeight: '1.6' }}>
-                Greater Vancouver<br />
-                to<br />
-                Whistler
-              </h3>
-              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
-                {lang === 'zh' ? '每车 $435 起' : 'From $435 (per vehicle)'}
-              </div>
-              <TransferBookingModalButton
-                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
-                activityId="16"
-                localePrefix={localePrefix}
-                lang={lang}
-              />
-            </div>
+                {/* Route */}
+                <div className="mb-4">
+                  <div className="font-bold text-gray-900 text-lg leading-relaxed">
+                    {route.from}
+                  </div>
+                  <div className="text-[#f7941e] font-bold my-1">→</div>
+                  <div className="font-bold text-gray-900 text-lg">
+                    {route.to}
+                  </div>
+                </div>
 
-            {/* Transfer 3 */}
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow">
-              <h3 className="text-text-heading mb-4" style={{ fontSize: '20px', fontWeight: 500, textTransform: 'none', lineHeight: '1.6' }}>
-                Whistler<br />
-                to<br />
-                YVR Airport / Greater Vancouver
-              </h3>
-              <div className="text-gray-500" style={{ fontSize: '16px', fontStyle: 'normal', marginBottom: '18px' }}>
-                {lang === 'zh' ? '每车 $435 起' : 'From $435 (per vehicle)'}
+                {/* Price */}
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-gray-900">${route.price}</span>
+                    <span className="text-gray-500 text-sm">{t.perVehicle}</span>
+                  </div>
+                </div>
+
+                {/* Booking button */}
+                <TransferBookingModalButton
+                  label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
+                  activityId={route.activityId}
+                  localePrefix={localePrefix}
+                  lang={lang}
+                />
               </div>
-              <TransferBookingModalButton
-                label={lang === 'zh' ? '立即预订（11座）' : 'Book Now (11-seater)'}
-                activityId="20"
-                localePrefix={localePrefix}
-                lang={lang}
-              />
-            </div>
+            ))}
           </div>
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-10">
             <Link
-              className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] transition-colors font-medium"
               href={`${localePrefix}/private-transfers`}
-              style={{ fontSize: '15px' }}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-100 hover:bg-[#f7941e] text-gray-700 hover:text-white font-semibold rounded-full transition-all duration-300"
             >
-              View All Transfers <i className="fa fa-arrow-right"></i>
+              <span className="material-icons">arrow_forward</span>
+              {t.viewAllTransfers}
             </Link>
           </div>
         </Container>
       </section>
 
       {/* Featured Tours Section */}
-      <section className="py-16 bg-white overflow-hidden">
+      <section className="py-20 bg-white overflow-hidden">
         <Container>
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-text-heading">{dict.tours.featured}</h2>
-            <p className="text-text-muted mt-2">Discover our most popular tour packages</p>
+          <div className="text-center mb-16">
+            <span className="text-[#f7941e] font-bold tracking-widest uppercase text-sm mb-2 block">
+              {dict.tours.featured}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{t.featuredTours}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">{t.featuredToursSubtitle}</p>
           </div>
 
           {toursError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-8">
               <p className="font-bold">Error loading tours</p>
               <p className="text-sm">
                 {process.env.NODE_ENV === 'development'
@@ -262,105 +324,74 @@ export default async function Home({ params }: { params: Promise<{ lang: Locale 
           )}
 
           {!toursError && tours.length === 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-              <p>No featured tours found. Tag some tours with "Featured Tour" in WordPress.</p>
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl">
+              <p>No featured tours found. Tag some tours with &quot;Featured Tour&quot; in WordPress.</p>
             </div>
           )}
 
-          {/* View All Tours Link */}
           {tours.length > 0 && (
             <div className="text-center mt-12">
               <Link
                 href={`/${lang}/tours`}
-                className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] transition-colors font-medium text-lg"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] text-white font-bold rounded-full hover:shadow-2xl hover:shadow-orange-500/30 hover:scale-105 transition-all duration-300"
               >
-                {dict.tours.all} <i className="fa fa-arrow-right"></i>
+                <span className="material-icons">explore</span>
+                {t.viewAllTours}
               </Link>
             </div>
           )}
         </Container>
       </section>
 
-      {/* Latest Posts Section */}
-      {/* <section className="py-16 bg-gray-100">
+      {/* Customer Reviews Section */}
+      <section className="py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
         <Container>
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-text-heading">Latest Travel News & Tips</h2>
-            <p className="text-text-muted mt-2">Read our latest articles for travel inspiration and advice.</p>
+            <span className="text-[#f7941e] font-bold tracking-widest uppercase text-sm mb-2 block">
+              {lang === 'zh' ? '客户反馈' : 'TESTIMONIALS'}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t.customerReviews}</h2>
+            <p className="text-white/60 max-w-2xl mx-auto">{t.reviewsSubtitle}</p>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] mx-auto rounded-full mt-4" />
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8">
-              <p className="font-bold">Error loading posts</p>
-              <p className="text-sm">{error}</p>
-              <p className="text-sm mt-2">
-                Make sure WordPress is running at: {process.env.NEXT_PUBLIC_WORDPRESS_API_URL}
-              </p>
-            </div>
-          )}
+          <div className="max-w-7xl mx-auto bg-white/5 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-white/10">
+            <FeaturedGoogleReview lang={lang} mode="all" />
+          </div>
+        </Container>
+      </section>
 
-          {!error && posts.length === 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-              <p>No posts found. Create some posts in WordPress to see them here.</p>
-            </div>
-          )}
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] relative overflow-hidden">
+        {/* Pattern overlay */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,#fff_1px,transparent_1px)] [background-size:24px_24px]" />
 
-          {posts.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {posts.map((post) => (
-                <article
-                  key={post.id}
-                  className="bg-white rounded-card overflow-hidden shadow-card hover:shadow-lg transition-shadow group"
-                >
-                  {post._embedded?.['wp:featuredmedia']?.[0] && (
-                    <div className="relative overflow-hidden">
-                      <img
-                        src={post._embedded['wp:featuredmedia'][0].source_url}
-                        alt={post._embedded['wp:featuredmedia'][0].alt_text || post.title.rendered}
-                        className="w-full h-full object-cover aspect-video transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <div className="text-sm text-primary mb-2 font-semibold">
-                      {post._embedded?.['wp:term']?.[0]?.[0]?.name || 'Uncategorized'}
-                    </div>
-                    <Link href={`/${lang}/posts/${post.slug}`}>
-                      <h3 className="text-xl font-bold text-text-heading mb-2 group-hover:text-primary transition-colors"
-                        dangerouslySetInnerHTML={{ __html: post.title.rendered }}
-                      />
-                    </Link>
-                    <div
-                      className="text-text line-clamp-3 mb-4"
-                      dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
-                    />
-                    <div className="flex items-center justify-between text-sm text-gray-500 border-t border-border pt-4 mt-4">
-                      <time dateTime={post.date}>
-                        {formatDate(post.date)}
-                      </time>
-                      {post._embedded?.author?.[0] && (
-                        <span className="font-medium">{post._embedded.author[0].name}</span>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
+        <Container className="relative z-10">
+          <div className="text-center text-white max-w-3xl mx-auto">
+            <div className="w-20 h-20 mx-auto mb-6 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <span className="material-icons text-white text-4xl">flight_takeoff</span>
             </div>
-          )}
-
-          {posts.length > 0 && (
-            <div className="text-center mt-12">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">{t.readyToExplore}</h2>
+            <p className="text-xl opacity-90 mb-10">{t.ctaSubtitle}</p>
+            <div className="flex flex-wrap justify-center gap-4">
               <Link
-                href={`/${lang}/blog`}
-                className="inline-block px-8 py-3 bg-primary text-white rounded-md font-semibold uppercase tracking-wider hover:bg-primary-dark transition-colors"
+                href={`${localePrefix}/tours`}
+                className="inline-flex items-center gap-2 px-10 py-4 bg-white text-[#f7941e] font-bold rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300"
               >
-                View All Posts
+                <span className="material-icons">explore</span>
+                {t.browseAllTours}
+              </Link>
+              <Link
+                href={`${localePrefix}/contact`}
+                className="inline-flex items-center gap-2 px-10 py-4 bg-white/20 backdrop-blur-sm text-white font-bold rounded-full border border-white/30 hover:bg-white/30 transition-all duration-300"
+              >
+                <span className="material-icons">mail</span>
+                {t.contactUs}
               </Link>
             </div>
-          )}
+          </div>
         </Container>
-      </section> */}
+      </section>
     </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { WPTour } from '@/lib/wordpress';
+import { proxyIfProtectedMedia } from '@/lib/wp-url';
 
 function normalizeMediaUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -11,27 +12,15 @@ function normalizeMediaUrl(value: unknown): string | null {
   return trimmed.replace(/\s+/g, '');
 }
 
-function proxyIfProtectedMedia(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.endsWith('.localsite.io')) {
-      return `/api/media?url=${encodeURIComponent(url)}`;
-    }
-  } catch {
-    // ignore
-  }
-  return url;
-}
-
 export default function TourPhotos({ tour }: { tour: WPTour }) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Get sections - works with both old page_builder and new optimized sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
-  
+
   // Extract gallery images from page builder
   const galleryImages: string[] = [];
-  
+
   sections.forEach((section: any) => {
     section.items?.forEach((item: any) => {
       // Check for gallery elements
@@ -50,13 +39,13 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
           }
         });
       }
-      
+
       // Check for image elements
       if (item.type === 'image' && item.value?.url) {
         const url = normalizeMediaUrl(item.value.url);
         if (url) galleryImages.push(proxyIfProtectedMedia(url));
       }
-      
+
       // Check for images embedded in text-box content
       if (item.type === 'text-box' && item.value?.content) {
         const content = item.value.content;
@@ -78,7 +67,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
   // Add featured image if not already in gallery
   const featuredImageUrl = normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
     normalizeMediaUrl(tour.featured_image_url?.full?.url);
-  
+
   if (featuredImageUrl) {
     const url = proxyIfProtectedMedia(featuredImageUrl);
     if (!galleryImages.includes(url)) galleryImages.unshift(url);
@@ -96,7 +85,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
     <>
       <div className="space-y-6">
         <h3 className="text-2xl font-bold text-gray-900">Tour Photos</h3>
-        
+
         {/* Photo Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {galleryImages.map((imageUrl, idx) => (
@@ -120,7 +109,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
 
       {/* Lightbox Modal */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
@@ -132,7 +121,7 @@ export default function TourPhotos({ tour }: { tour: WPTour }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          
+
           <div className="relative max-w-5xl max-h-[90vh] w-full h-full">
             <Image
               src={selectedImage}

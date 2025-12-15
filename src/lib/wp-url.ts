@@ -39,7 +39,10 @@ export function getWpBaseUrl(): string {
 /**
  * Check if a URL needs to go through the media proxy (for authenticated .localsite.io domains)
  */
-function proxyIfProtectedMedia(url: string): string {
+/**
+ * Check if a URL needs to go through the media proxy (for authenticated .localsite.io domains)
+ */
+export function proxyIfProtectedMedia(url: string): string {
     try {
         const parsed = new URL(url);
         if (parsed.hostname.endsWith('.localsite.io')) {

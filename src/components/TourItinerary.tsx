@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { WPTour } from '@/lib/wordpress';
+import { ContentWithImageCarousel } from './ContentWithImageCarousel';
 
 export default function TourItinerary({ tour }: { tour: WPTour }) {
   const [openDay, setOpenDay] = useState<number>(0);
-  
+
   // Get sections - works with both old page_builder and new optimized sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
-  
+
   // Find itinerary section
   const itinerarySection = sections.find(
     (section: any) => section.value?.id === 'itinerary'
@@ -41,14 +42,14 @@ export default function TourItinerary({ tour }: { tour: WPTour }) {
   return (
     <div className="space-y-4">
       <h3 className="text-2xl font-bold text-gray-900 mb-6">Day by Day Itinerary</h3>
-      
+
       <div className="space-y-3">
         {itinerary.map((day, idx) => {
           const isOpen = openDay === idx;
           const dayNumber = day['head-text'] || `Day ${idx + 1}`;
-          
+
           return (
-            <div 
+            <div
               key={idx}
               className="border border-gray-200 rounded-lg overflow-hidden hover:border-[#f7941e] transition-colors"
             >
@@ -66,10 +67,10 @@ export default function TourItinerary({ tour }: { tour: WPTour }) {
                     <div className="font-semibold text-gray-900">{day.title}</div>
                   </div>
                 </div>
-                <svg 
+                <svg
                   className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -79,9 +80,9 @@ export default function TourItinerary({ tour }: { tour: WPTour }) {
               {/* Accordion Content */}
               {isOpen && (
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  <div 
+                  <ContentWithImageCarousel
+                    content={day.content}
                     className="prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: day.content }}
                   />
                 </div>
               )}

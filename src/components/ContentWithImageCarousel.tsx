@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
+import { proxyIfProtectedMedia } from '@/lib/wp-url';
 
 interface ContentWithImageCarouselProps {
   content: string;
@@ -15,7 +16,7 @@ interface ImageData {
 
 // Image Carousel component using Embla
 function ImageCarousel({ images }: { images: ImageData[] }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: 'start',
     containScroll: 'trimSnaps'
@@ -89,6 +90,27 @@ export function ContentWithImageCarousel({ content, className = '' }: ContentWit
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
+
+    // First, fix ALL image URLs in the content
+    const allImages = doc.querySelectorAll('img');
+    allImages.forEach(img => {
+      const originalSrc = img.getAttribute('src');
+      if (originalSrc) {
+        img.src = proxyIfProtectedMedia(originalSrc);
+        // Also fix srcset if present
+        if (img.srcset) {
+          const newSrcset = img.srcset.split(',').map(part => {
+            const [url, descriptor] = part.trim().split(/\s+/);
+            if (url) {
+              return `${proxyIfProtectedMedia(url)} ${descriptor || ''}`;
+            }
+            return part;
+          }).join(', ');
+          img.srcset = newSrcset;
+        }
+      }
+    });
+
     const imageGroups: { images: ImageData[], placeholder: string }[] = [];
 
     // Find all paragraphs with multiple images
@@ -97,7 +119,7 @@ export function ContentWithImageCarousel({ content, className = '' }: ContentWit
       const images = p.querySelectorAll('img');
       if (images.length > 1) {
         const imageData: ImageData[] = Array.from(images).map(img => ({
-          src: img.src,
+          src: img.src, // This is already proxied now
           alt: img.alt || ''
         }));
 

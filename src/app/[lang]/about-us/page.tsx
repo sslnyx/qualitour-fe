@@ -1,13 +1,17 @@
 import { Metadata } from 'next';
 import Container from '@/components/ui/Container';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import TourReviews from '@/components/TourReviews';
+import guideTourImg from '../../../../public/guide-tour.jpg';
+import miniTourImg from '../../../../public/mini-tour.jpg';
+import skiShuttleImg from '../../../../public/ski-shuttle.jpg';
 
 export const metadata: Metadata = {
   title: 'About Us | Qualitour',
-  description: 'Learn about Qualitour, a Vancouver-based tour operator offering authentic Canadian tours, private transfers, and customizable travel experiences.',
+  description: 'Discover the story behind Qualitour, Vancouver\'s premier tour operator dedicated to authentic, safe, and personalized Canadian travel experiences.',
 };
 
 export default async function AboutPage({
@@ -18,160 +22,232 @@ export default async function AboutPage({
   const { lang } = await params;
   const localePrefix = getLocalePrefix(lang);
 
+  // Translation helpers (placeholder for real i18n implementation if needed)
+  const t = {
+    title: lang === 'zh' ? '关于我们' : 'About Qualitour',
+    subtitle: lang === 'zh' ? '探索我们对真实旅行体验的热情' : 'Crafting Unforgettable Canadian Journeys Since inception.',
+    mission: lang === 'zh' ? '我们的使命' : 'Our Mission',
+    missionText: lang === 'zh' ? 'Qualitour 总部位于温哥华，为您提供真实的旅游体验...' : 'To connect travelers with the soul of Canada through authentic, handcrafted, and personalized experiences that create memories to last a lifetime.',
+  };
+
   return (
     <main className="flex-grow">
-      {/* Hero Section */}
-      <section className="bg-gray-50 py-12 md:py-16">
-        <Container>
-          <h1 className="text-4xl md:text-5xl font-bold text-text-heading mb-4">About Us</h1>
-          <p className="text-text-muted text-lg">Discover our story and passion for authentic travel experiences</p>
+      {/* Premium Hero Section */}
+      <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+        <Image
+          src={guideTourImg}
+          alt="Beautiful landscape in Western Canada"
+          fill
+          className="object-cover"
+          priority
+          placeholder="blur"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+        <Container className="relative z-10 text-center text-white">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight drop-shadow-lg">
+            {t.title}
+          </h1>
+          <p className="text-xl md:text-2xl font-light text-gray-100 max-w-3xl mx-auto drop-shadow-md">
+            {t.subtitle}
+          </p>
         </Container>
       </section>
 
-      {/* Main Content Section */}
-      <section className="py-16 md:py-24">
+      {/* Mission Statement */}
+      <section className="py-20 bg-white">
         <Container>
-          <div className="max-w-4xl mx-auto">
-            {/* Introduction */}
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-text-heading mb-6">Who We Are</h2>
-              <p className="text-text text-lg mb-4">
-                Qualitour is a tour operator based in Vancouver that provides authentic tour experiences. We offer a wide range of tours for you to explore the best of Canada, including city sightseeing tours, pre/post cruise tours, adventure tours, hiking tours, wildlife & eco tours, ski vacations, and more!
+          <div className="max-w-4xl mx-auto text-center">
+            <span className="text-[#f7941e] font-bold tracking-widest uppercase text-sm mb-4 block">
+              {t.mission}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 leading-relaxed">
+              "{t.missionText}"
+            </h2>
+            <div className="w-24 h-1 bg-[#f7941e] mx-auto mt-10 rounded-full"></div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Core Values / Why Choose Us */}
+      <section className="py-20 bg-gray-50">
+        <Container>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { icon: 'verified', title: 'Authenticity', desc: 'Handcrafted itineraries that go beyond the tourist traps to reveal the true spirit of the destination.' },
+              { icon: 'settings_suggest', title: 'Personalization', desc: 'Tailor-made experiences designed to match your pace, interests, and travel style perfectly.' },
+              { icon: 'admin_panel_settings', title: 'Safety First', desc: 'Your well-being is our top priority, with rigorous safety standards and experienced local guides.' },
+              { icon: 'favorite', title: 'Passion', desc: 'Founded by travel enthusiasts who pour their heart into creating your dream vacation.' },
+            ].map((value, idx) => (
+              <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div className="w-14 h-14 bg-[#f7941e]/10 rounded-full flex items-center justify-center text-[#f7941e] mb-6">
+                  <span className="material-icons text-3xl">{value.icon}</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{value.title}</h3>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  {value.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* Visual Storytelling Section */}
+      <section className="py-24 overflow-hidden">
+        <Container>
+          {/* Block 1 */}
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 mb-24">
+            <div className="lg:w-1/2 relative group">
+              <div className="absolute inset-0 bg-[#f7941e] rounded-2xl rotate-3 group-hover:rotate-2 transition-transform opacity-20"></div>
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
+                <Image
+                  src={miniTourImg}
+                  alt="Small group tour experience"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+            </div>
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 relative">
+                <span className="relative z-10">Who We Are</span>
+              </h2>
+              <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                Qualitour is a Vancouver-based tour operator dedicated to showcasing the very best of Canada. From the rugged peaks of the Rockies to the vibrant streets of Vancouver, we curate experiences that inspire.
               </p>
-              <p className="text-text text-lg mb-4">
-                Our tours are customizable and ensure you can relax and enjoy a personalized tour experience.
-              </p>
-              <p className="text-text text-lg">
-                At Qualitour, each tour is handcrafted by our passionate team and we are proud to deliver authentic tour experiences to you that create life-long memories. We look forward to welcoming you on board soon.
+              <p className="text-lg text-gray-600 leading-relaxed">
+                We offer a wide range of tours including city sightseeing, pre/post cruise excursions, adventure hiking, wildlife eco-tours, and ski vacations. Every journey is an opportunity to connect with nature, culture, and each other.
               </p>
             </div>
+          </div>
 
-            {/* Private Transfers */}
-            <div className="mb-12 bg-gray-50 p-8 rounded-lg">
-              <h2 className="text-3xl font-bold text-text-heading mb-6">Private Transfers</h2>
-              <p className="text-text text-lg">
-                We also specialize in operating private transfers. Whether you are looking for hassle-free airport transfers, cruise ship transfers, or ski transfers, we have the perfect vehicles for your transportation needs.
-              </p>
+          {/* Block 2 (Reversed) */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-20">
+            <div className="lg:w-1/2 relative group">
+              <div className="absolute inset-0 bg-blue-500 rounded-2xl -rotate-2 group-hover:-rotate-1 transition-transform opacity-10"></div>
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
+                <Image
+                  src={skiShuttleImg}
+                  alt="Private transfer service"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
             </div>
-
-            {/* Our Commitment */}
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-text-heading mb-6">Our Commitment</h2>
-              <p className="text-text text-lg">
-                We strive to provide the best services to our customers. Your satisfaction and safety are our top priorities, and we're dedicated to making every journey with Qualitour unforgettable.
+            <div className="lg:w-1/2">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                More Than Just Tours
+              </h2>
+              <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                We also specialize in seamless private transfers. Whether you need a hassle-free airport pickup, a cruise ship connection, or a comfortable ride to Whistler for a ski weekend, our fleet is at your service.
               </p>
+              <ul className="space-y-4">
+                {[
+                  'Luxury fleet for maximum comfort',
+                  'Professional, punctual drivers',
+                  '24/7 Support for peace of mind'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-gray-700 font-medium">
+                    <span className="material-icons text-[#f7941e]">check_circle</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </Container>
       </section>
 
-      {/* Services Section */}
-      <section className="py-16 md:py-24 bg-gray-50">
+      {/* Services Showcase */}
+      <section className="py-20 bg-gray-900 text-white">
         <Container>
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-text-heading mb-4">Our Services</h2>
-            <p className="text-text-muted text-lg">Experience the best of what Qualitour has to offer</p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Premium Services</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">Experience the Qualitour difference with our range of specialized travel services.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Guided Tours */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow group">
-              <div className="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                <span className="material-icons text-white text-6xl">tour</span>
+            {/* Service 1 */}
+            <Link href={`${localePrefix}/tours`} className="group relative h-96 rounded-2xl overflow-hidden block">
+              <Image src={guideTourImg} alt="Guided Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
+                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <span className="material-icons text-[#f7941e] text-4xl mb-4">tour</span>
+                  <h3 className="text-2xl font-bold mb-2">Guided Tours</h3>
+                  <p className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 text-sm">
+                    Expertly led journeys through Canada's most iconic landscapes.
+                  </p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-text-heading mb-3">Guided Tours</h3>
-                <p className="text-text mb-6">
-                  Explore the best of Canada with experienced local tour guides who know every hidden gem and story.
-                </p>
-                <Link
-                  href={`${localePrefix}/tours`}
-                  className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] font-semibold transition-colors"
-                >
-                  Learn More <span className="material-icons text-sm">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
+            </Link>
 
-            {/* Mini Tours */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow group">
-              <div className="h-48 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                <span className="material-icons text-white text-6xl">groups</span>
+            {/* Service 2 */}
+            <Link href={`${localePrefix}/tours`} className="group relative h-96 rounded-2xl overflow-hidden block">
+              <Image src={miniTourImg} alt="Mini Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
+                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <span className="material-icons text-[#f7941e] text-4xl mb-4">groups</span>
+                  <h3 className="text-2xl font-bold mb-2">Mini Groups</h3>
+                  <p className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 text-sm">
+                    Intimate, flexible travel experiences for friends and families.
+                  </p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-text-heading mb-3">Mini Tours</h3>
-                <p className="text-text mb-6">
-                  Travel in small private groups with family and friends only. Intimate experiences tailored to your pace.
-                </p>
-                <Link
-                  href={`${localePrefix}/tours`}
-                  className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] font-semibold transition-colors"
-                >
-                  Learn More <span className="material-icons text-sm">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
+            </Link>
 
-            {/* Ski Shuttles */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow group">
-              <div className="h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                <span className="material-icons text-white text-6xl">snowflake</span>
+            {/* Service 3 */}
+            <Link href={`${localePrefix}/private-transfers`} className="group relative h-96 rounded-2xl overflow-hidden block">
+              <Image src={skiShuttleImg} alt="Private Transfers" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
+                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <span className="material-icons text-[#f7941e] text-4xl mb-4">directions_car</span>
+                  <h3 className="text-2xl font-bold mb-2">Private Transfers</h3>
+                  <p className="text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 text-sm">
+                    Comfortable, reliable transportation for any occasion.
+                  </p>
+                </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-2xl font-bold text-text-heading mb-3">Ski Shuttles</h3>
-                <p className="text-text mb-6">
-                  Private transfers between Vancouver and your favourite ski resorts. Comfortable and convenient service.
-                </p>
-                <Link
-                  href={`${localePrefix}/private-transfers`}
-                  className="inline-flex items-center gap-2 text-[#f7941e] hover:text-[#e68a1c] font-semibold transition-colors"
-                >
-                  Learn More <span className="material-icons text-sm">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
+            </Link>
           </div>
         </Container>
       </section>
 
-      {/* Google Reviews Section */}
-      <section className="py-16 md:py-24">
+      {/* Reviews Section */}
+      <section className="py-24 bg-gray-50">
         <Container>
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-text-heading mb-4">
-              {lang === 'zh' ? '客户评价' : 'Customer Reviews'}
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {lang === 'zh' ? '客户评价' : 'What Our Travelers Say'}
             </h2>
-            <p className="text-text-muted text-lg">
-              {lang === 'zh' ? '看看我们的客户对我们的评价' : 'See what our customers think about us'}
-            </p>
+            <div className="w-20 h-1 bg-[#f7941e] mx-auto rounded-full"></div>
           </div>
-
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <TourReviews limit={6} />
           </div>
         </Container>
       </section>
 
-      {/* Call to Action Section */}
-      <section className="py-16 md:py-24 bg-[#f7941e]">
-        <Container>
-          <div className="text-center text-white max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready for Your Next Adventure?</h2>
-            <p className="text-lg mb-8 opacity-90">
-              Whether you're looking for guided tours, mini group experiences, or reliable transfers, Qualitour is here to make your journey unforgettable.
+      {/* CTA Section */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#f7941e_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <Container className="relative z-10">
+          <div className="bg-[#f7941e] rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl mx-auto max-w-5xl">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to Start Your Adventure?</h2>
+            <p className="text-lg md:text-xl text-white/90 mb-10 max-w-2xl mx-auto">
+              Let us help you create the perfect itinerary. Contact us today or browse our curated selection of tours.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href={`${localePrefix}/tours`}
-                className="inline-block px-8 py-3 bg-white text-[#f7941e] font-bold rounded-md hover:bg-gray-100 transition-colors"
+                className="px-8 py-4 bg-white text-[#f7941e] font-bold rounded-full hover:bg-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1"
               >
-                Browse Tours
+                Browse All Tours
               </Link>
               <Link
                 href={`${localePrefix}/contact`}
-                className="inline-block px-8 py-3 bg-[#d67a1a] text-white font-bold rounded-md hover:bg-[#c56810] transition-colors"
+                className="px-8 py-4 bg-[#d67a1a] text-white font-bold rounded-full hover:bg-[#c56810] hover:shadow-lg transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-white/20"
               >
-                Get in Touch
+                Contact Us
               </Link>
             </div>
           </div>
@@ -180,3 +256,4 @@ export default async function AboutPage({
     </main>
   );
 }
+

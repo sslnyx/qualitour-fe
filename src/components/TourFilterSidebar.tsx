@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { WPTour, WPTourDestination, WPTourActivity } from '@/lib/wordpress';
 import { TourCard } from './TourCard';
 
@@ -81,6 +82,8 @@ export function TourFilterSidebar({
     activities,
     lang,
 }: TourFilterSidebarProps) {
+    const searchParams = useSearchParams();
+
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDestinations, setSelectedDestinations] = useState<Set<string>>(new Set());
@@ -88,6 +91,7 @@ export function TourFilterSidebar({
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
     const [durationRange, setDurationRange] = useState<[number, number]>([0, 30]);
     const [sortBy, setSortBy] = useState<'date' | 'price-asc' | 'price-desc' | 'name'>('date');
+
 
     // UI states
     const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -124,6 +128,29 @@ export function TourFilterSidebar({
         setPriceRange([minPrice, maxPrice]);
         setDurationRange([minDuration, maxDuration]);
     }, [minPrice, maxPrice, minDuration, maxDuration]);
+
+    // Initialize from URL params - run after default initialization
+    useEffect(() => {
+        if (!searchParams) return;
+
+        // Handle search query
+        const search = searchParams.get('tour-search');
+        if (search) {
+            setSearchQuery(search);
+        }
+
+        // Handle duration category from home page
+        const category = searchParams.get('tax-tour_category');
+        if (category) {
+            // Parse duration slugs like "1-day-tour", "2-3-days-tours"
+            const match = category.match(/(\d+)(?:-(\d+))?/);
+            if (match) {
+                const min = parseInt(match[1]);
+                const max = match[2] ? parseInt(match[2]) : min;
+                setDurationRange([min, max]);
+            }
+        }
+    }, [searchParams]);
 
     // Build destination tree for hierarchical display
     const { topLevel: topLevelDestinations, parentMap: destinationChildren } = useMemo(

@@ -52,7 +52,7 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${aBeeZee.variable} ${dancingScript.variable} ${kaushanScript.variable} font-sans antialiased`}
       >
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen overflow-hidden">
           {children}
         </div>
       </body>
