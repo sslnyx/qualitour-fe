@@ -8,8 +8,7 @@ const TOUR_LIST_FIELDS = 'id,slug,title,excerpt,featured_media,tour_category,tou
 const TOUR_SINGLE_FIELDS =
   'id,slug,title,content,excerpt,featured_media,featured_image_url,tour_meta,goodlayers_data,acf_fields,tour_terms';
 
-// Reduced from 8000ms to 5000ms to prevent Worker resource exhaustion
-// Cloudflare Workers have limited CPU time; long-running requests can trigger 1102 errors
+// Reduced from 8000ms to 5000ms
 const DEFAULT_FETCH_TIMEOUT_MS = 5000;
 
 // Helper to get API URL dynamically
@@ -21,22 +20,13 @@ function normalizeBaseUrl(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
+// Optimized Base64 (faster)
 function toBase64(value: string): string {
-  // Node.js
-  if (typeof (globalThis as any).Buffer !== 'undefined') {
-    return (globalThis as any).Buffer.from(value).toString('base64');
+  try {
+    return btoa(value);
+  } catch {
+    return Buffer.from(value).toString('base64');
   }
-
-  // Edge / browser
-  if (typeof globalThis.btoa === 'function') {
-    // Credentials are typically ASCII, but keep this UTF-8 safe.
-    const utf8 = new TextEncoder().encode(value);
-    let binary = '';
-    for (const byte of utf8) binary += String.fromCharCode(byte);
-    return globalThis.btoa(binary);
-  }
-
-  throw new Error('No base64 encoder available in this runtime');
 }
 
 /**
@@ -635,11 +625,15 @@ const REQUEST_CACHE_MAX_ENTRIES = 100;
 // Reduced from 15s to 5s - aggressive cleanup for rapid navigation
 const REQUEST_CACHE_TTL_MS = 5_000;
 
+// Optimized Prune (O(1) instead of Loop)
 function pruneRequestCache(now: number) {
-  // Quick exit if cache is small
-  if (requestCache.size === 0) return;
+  // If cache is too large, clear it entirely to save CPU
+  if (requestCache.size > REQUEST_CACHE_MAX_ENTRIES) {
+    requestCache.clear();
+    return;
+  }
 
-  // Drop expired entries first - using simple iteration (more CPU efficient)
+  // Iterate to clean old entries (only if cache isn't huge)
   const keysToDelete: string[] = [];
   for (const [key, entry] of requestCache) {
     if (now - entry.createdAt > REQUEST_CACHE_TTL_MS) {
@@ -648,17 +642,6 @@ function pruneRequestCache(now: number) {
   }
   for (const key of keysToDelete) {
     requestCache.delete(key);
-  }
-
-  // If still too large, clear oldest half (simpler than sorting)
-  if (requestCache.size > REQUEST_CACHE_MAX_ENTRIES) {
-    const toRemove = Math.floor(requestCache.size / 2);
-    let removed = 0;
-    for (const key of requestCache.keys()) {
-      if (removed >= toRemove) break;
-      requestCache.delete(key);
-      removed++;
-    }
   }
 }
 
@@ -1155,10 +1138,12 @@ export async function getTourBySlug(slug: string, lang?: string): Promise<WPTour
         if (timeoutId) clearTimeout(timeoutId);
       });
 
+      /*
       if (process.env.NODE_ENV === 'development' && startTime) {
         const duration = Date.now() - startTime;
-        console.log(`[Tour API] /qualitour/v1/tours/slug/${encodedSlug} - ${duration}ms - ${response.status}`);
+        // console.log(`[Tour API] /qualitour/v1/tours/slug/${encodedSlug} - ${duration}ms - ${response.status}`);
       }
+      */
 
       if (!response.ok) {
         if (response.status === 404) return null;
