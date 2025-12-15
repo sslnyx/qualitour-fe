@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { proxyIfProtectedMedia } from '@/lib/wp-url';
+import { wpUrl } from '@/lib/wp-url';
 
 interface ContentWithImageCarouselProps {
   content: string;
@@ -96,13 +96,13 @@ export function ContentWithImageCarousel({ content, className = '' }: ContentWit
     allImages.forEach(img => {
       const originalSrc = img.getAttribute('src');
       if (originalSrc) {
-        img.src = proxyIfProtectedMedia(originalSrc);
+        img.src = wpUrl(originalSrc);
         // Also fix srcset if present
         if (img.srcset) {
           const newSrcset = img.srcset.split(',').map(part => {
             const [url, descriptor] = part.trim().split(/\s+/);
             if (url) {
-              return `${proxyIfProtectedMedia(url)} ${descriptor || ''}`;
+              return `${wpUrl(url)} ${descriptor || ''}`;
             }
             return part;
           }).join(', ');

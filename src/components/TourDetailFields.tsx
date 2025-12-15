@@ -1,5 +1,5 @@
 import { WPTour } from '@/lib/wordpress';
-import { proxyIfProtectedMedia } from '@/lib/wp-url';
+import { wpUrl } from '@/lib/wp-url';
 import { ContentWithImageCarousel } from './ContentWithImageCarousel';
 
 interface DetailField {
@@ -33,7 +33,7 @@ function cleanHTML(html: string): string {
     // Remove empty <p></p> tags
     .replace(/<p[^>]*><\/p>/gi, '')
     // Clean up multiple consecutive line breaks
-    .replace(/(<br\s*\/?\s*>){3,}/gi, '<br><br>')
+    .replace(/(<br\s*\/?s*>){3,}/gi, '<br><br>')
     .trim();
 }
 
@@ -149,7 +149,7 @@ export default function TourDetailFields({ tour }: { tour: WPTour }) {
             )}
             {field.type === 'image' && field.imageUrl && (
               <img
-                src={proxyIfProtectedMedia(field.imageUrl)}
+                src={wpUrl(field.imageUrl)}
                 alt={field.label}
                 className="w-full h-auto rounded-lg"
               />

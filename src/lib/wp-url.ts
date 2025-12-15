@@ -1,11 +1,14 @@
 /**
- * Get WordPress base URL for static assets (images, etc.)
- * 
- * In production, this should point to the production WordPress server.
- * In development, this points to the local WordPress instance.
+ * Cloudflare R2 CDN URL for media assets.
+ * This serves images directly from the edge without going through the Worker.
+ */
+const R2_MEDIA_URL = 'https://qualitour-assets.isquarestudio.com';
+
+/**
+ * Get WordPress base URL for API calls (not for media).
  * 
  * Usage:
- *   const imageUrl = `${getWpBaseUrl()}/wp-content/uploads/2020/10/image.jpg`;
+ *   const apiUrl = `${getWpBaseUrl()}/wp-json/qualitour/v1/tours`;
  */
 export function getWpBaseUrl(): string {
     // First try explicit origin variable
@@ -25,9 +28,8 @@ export function getWpBaseUrl(): string {
         }
     }
 
-    // Fallback for production - update this if your production WP URL is different
+    // Fallback for production
     if (process.env.NODE_ENV === 'production') {
-        // This should be your production WordPress URL
         console.warn('[getWpBaseUrl] No WordPress origin configured. Using fallback.');
         return 'https://handsome-cellar.localsite.io';
     }
@@ -37,44 +39,50 @@ export function getWpBaseUrl(): string {
 }
 
 /**
- * Check if a URL needs to go through the media proxy (for authenticated .localsite.io domains)
+ * Check if a path is a WordPress media upload path.
  */
-/**
- * Check if a URL needs to go through the media proxy (for authenticated .localsite.io domains)
- */
-export function proxyIfProtectedMedia(url: string): string {
-    try {
-        const parsed = new URL(url);
-        if (parsed.hostname.endsWith('.localsite.io')) {
-            return `/api/media?url=${encodeURIComponent(url)}`;
-        }
-    } catch {
-        // ignore
-    }
-    return url;
+function isMediaPath(path: string): boolean {
+    return path.startsWith('/wp-content/uploads/');
 }
 
 /**
- * Convert a local WordPress URL to use the current environment's WordPress base.
- * Useful for hardcoded local URLs that need to work in production.
+ * Convert a WordPress URL to use R2 CDN for media files.
+ * Non-media URLs are passed through unchanged.
  * 
- * @param localUrl - URL like 'http://qualitour.local/wp-content/uploads/...'
- * @returns Fixed URL using the current environment's WordPress base
+ * @param localUrl - URL like 'http://qualitour.local/wp-content/uploads/...' or '/wp-content/uploads/...'
+ * @returns CDN URL for media, or original URL for non-media
  */
 export function wpUrl(localUrl: string): string {
-    // If it's a relative path, build full URL and check if proxying needed
+    // Handle relative paths
     if (localUrl.startsWith('/')) {
-        const fullUrl = `${getWpBaseUrl()}${localUrl}`;
-        return proxyIfProtectedMedia(fullUrl);
+        if (isMediaPath(localUrl)) {
+            // Serve media from R2 CDN
+            return `${R2_MEDIA_URL}${localUrl}`;
+        }
+        // Non-media paths go to WordPress
+        return `${getWpBaseUrl()}${localUrl}`;
     }
 
-    // If it's already a full URL, extract the path and rebuild
+    // Handle full URLs
     try {
         const parsed = new URL(localUrl);
         const path = parsed.pathname + parsed.search + parsed.hash;
-        const fullUrl = `${getWpBaseUrl()}${path}`;
-        return proxyIfProtectedMedia(fullUrl);
+
+        if (isMediaPath(path)) {
+            // Serve media from R2 CDN
+            return `${R2_MEDIA_URL}${path}`;
+        }
+        // Non-media paths go to WordPress
+        return `${getWpBaseUrl()}${path}`;
     } catch {
         return localUrl;
     }
+}
+
+/**
+ * @deprecated Use wpUrl() instead - proxy is no longer needed with R2 CDN
+ */
+export function proxyIfProtectedMedia(url: string): string {
+    // Keep for backwards compatibility but just return the URL
+    return url;
 }

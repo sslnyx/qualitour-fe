@@ -1046,26 +1046,8 @@ export async function getTours(params: WPApiParams = {}, lang?: string): Promise
     return result.tours;
   }
 
-  // For list views, only fetch essential fields to reduce payload
-  const isListView = !safeParams.slug && (safeParams.per_page || 0) > 1;
-
-  if (isListView) {
-    const result = await fetchAPI('/tour', {
-      // Only fetch fields needed for tour cards
-      _fields: TOUR_LIST_FIELDS,
-      ...(lang && { lang }),
-      ...safeParams,
-    });
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[getTours] List view returned ${result.length} tours`);
-    }
-    return result;
-  }
-
-  return fetchAPI('/tour', {
-    ...(lang && { lang }),
-    ...safeParams,
-  });
+  // Custom API is required - no wp/v2 fallback
+  throw new Error('getTours: Custom API URL (qualitour/v1) is required. Set NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL.');
 }
 
 /**
@@ -1083,10 +1065,8 @@ export async function getToursMinimal(params: WPApiParams = {}): Promise<WPTour[
     return result.tours;
   }
 
-  return fetchAPI('/tour', {
-    _fields: 'id,slug,title,excerpt,featured_image_url,tour_meta,tour_terms',
-    ...safeParams,
-  });
+  // Custom API is required - no wp/v2 fallback
+  throw new Error('getToursMinimal: Custom API URL (qualitour/v1) is required. Set NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL.');
 }
 
 /**
@@ -1213,13 +1193,8 @@ export async function getTourBySlug(slug: string, lang?: string): Promise<WPTour
     return promise;
   }
 
-  const tours = await fetchAPI('/tour', {
-    slug: encodedSlug,
-    per_page: 1,
-    _fields: TOUR_SINGLE_FIELDS,
-    ...(lang && { lang }),
-  });
-  return tours[0] || null;
+  // Custom API is required - no wp/v2 fallback
+  throw new Error('getTourBySlug: Custom API URL (qualitour/v1) is required. Set NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL.');
 }
 
 /**
@@ -1277,10 +1252,8 @@ export async function getTourById(id: number): Promise<WPTour | null> {
       return (await res.json()) as WPTour;
     }
 
-    return await fetchAPI(`/tour/${id}`, {
-      _fields:
-        'id,slug,title,content,excerpt,featured_media,featured_image_url,tour_meta,goodlayers_data,acf_fields,tour_category,tour_tag,tour_terms',
-    });
+    // Custom API is required - no wp/v2 fallback
+    throw new Error('getTourById: Custom API URL (qualitour/v1) is required. Set NEXT_PUBLIC_WORDPRESS_CUSTOM_API_URL.');
   } catch {
     return null;
   }
@@ -1367,153 +1340,102 @@ export async function getToursByTourDurationSlug(slug: string, params: WPApiPara
  */
 export async function searchTours(query: string, params: WPApiParams = {}): Promise<WPTour[]> {
   const { _embed: _ignoredEmbed, ...safeParams } = params;
-  return fetchAPI('/tour', {
-    search: query,
-    ...safeParams,
-  });
+  // Use custom API for search
+  return getTours({ search: query, ...safeParams });
 }
 
 /**
  * Get all tour categories
  */
 export async function getTourCategories(params: WPApiParams = {}): Promise<WPTourCategory[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_category', params as Record<string, any>);
-    return terms.map(mapV1TermToTourCategory);
-  }
-  return fetchAPI('/tour-category', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour_category', params as Record<string, any>);
+  return terms.map(mapV1TermToTourCategory);
 }
 
 /**
  * Get a single tour category by slug
  */
 export async function getTourCategoryBySlug(slug: string): Promise<WPTourCategory | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_category', { slug, per_page: 1 } as Record<string, any>);
-    return terms[0] ? mapV1TermToTourCategory(terms[0]) : null;
-  }
-  const categories = await fetchAPI('/tour-category', { slug, _fields: TOUR_TAXONOMY_FIELDS });
-  return categories[0] || null;
+  const { terms } = await fetchTermsV1('tour_category', { slug, per_page: 1 } as Record<string, any>);
+  return terms[0] ? mapV1TermToTourCategory(terms[0]) : null;
 }
 
 /**
  * Get all tour tags
  */
 export async function getTourTags(params: WPApiParams = {}): Promise<WPTourTag[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_tag', params as Record<string, any>);
-    return terms.map(mapV1TermToTourTag);
-  }
-  return fetchAPI('/tour-tag', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour_tag', params as Record<string, any>);
+  return terms.map(mapV1TermToTourTag);
 }
 
 /**
  * Get a single tour tag by slug
  */
 export async function getTourTagBySlug(slug: string): Promise<WPTourTag | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_tag', { slug, per_page: 1 } as Record<string, any>);
-    return terms[0] ? mapV1TermToTourTag(terms[0]) : null;
-  }
-  const tags = await fetchAPI('/tour-tag', { slug, _fields: TOUR_TAXONOMY_FIELDS });
-  return tags[0] || null;
+  const { terms } = await fetchTermsV1('tour_tag', { slug, per_page: 1 } as Record<string, any>);
+  return terms[0] ? mapV1TermToTourTag(terms[0]) : null;
 }
 
 /**
  * Get all tour types (dedicated taxonomy)
  */
 export async function getTourTypes(params: WPApiParams = {}): Promise<WPTourType[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_type', params as Record<string, any>);
-    return terms.map(mapV1TermToTourType);
-  }
-  return fetchAPI('/tour-type', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour_type', params as Record<string, any>);
+  return terms.map(mapV1TermToTourType);
 }
 
 /**
  * Get a single tour type by slug (dedicated taxonomy)
  */
 export async function getTourTypeBySlug(slug: string, lang?: string): Promise<WPTourType | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const termParams: Record<string, any> = { slug, per_page: 1 };
-    if (lang && lang !== 'en') termParams.lang = lang;
-    const { terms } = await fetchTermsV1('tour_type', termParams);
-    return terms[0] ? mapV1TermToTourType(terms[0]) : null;
-  }
-  const types = await fetchAPI('/tour-type', { slug, lang, _fields: TOUR_TAXONOMY_FIELDS });
-  return types[0] || null;
+  const termParams: Record<string, any> = { slug, per_page: 1 };
+  if (lang && lang !== 'en') termParams.lang = lang;
+  const { terms } = await fetchTermsV1('tour_type', termParams);
+  return terms[0] ? mapV1TermToTourType(terms[0]) : null;
 }
 
 /**
  * Get all tour durations (dedicated taxonomy)
  */
 export async function getTourDurations(params: WPApiParams = {}): Promise<WPTourDuration[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour_duration', params as Record<string, any>);
-    return terms.map(mapV1TermToTourDuration);
-  }
-  return fetchAPI('/tour-duration', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour_duration', params as Record<string, any>);
+  return terms.map(mapV1TermToTourDuration);
 }
 
 /**
  * Get a single tour duration by slug (dedicated taxonomy)
  */
 export async function getTourDurationBySlug(slug: string, lang?: string): Promise<WPTourDuration | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const termParams: Record<string, any> = { slug, per_page: 1 };
-    if (lang && lang !== 'en') termParams.lang = lang;
-    const { terms } = await fetchTermsV1('tour_duration', termParams);
-    return terms[0] ? mapV1TermToTourDuration(terms[0]) : null;
-  }
-  const durations = await fetchAPI('/tour-duration', { slug, lang, _fields: TOUR_TAXONOMY_FIELDS });
-  return durations[0] || null;
+  const termParams: Record<string, any> = { slug, per_page: 1 };
+  if (lang && lang !== 'en') termParams.lang = lang;
+  const { terms } = await fetchTermsV1('tour_duration', termParams);
+  return terms[0] ? mapV1TermToTourDuration(terms[0]) : null;
 }
 
 /**
  * Get all tour activities
  */
 export async function getTourActivities(params: WPApiParams = {}): Promise<WPTourActivity[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour-activity', params as Record<string, any>);
-    return terms.map(mapV1TermToTourActivity);
-  }
-  return fetchAPI('/tour-activity', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour-activity', params as Record<string, any>);
+  return terms.map(mapV1TermToTourActivity);
 }
 
 /**
  * Get a single tour activity by slug
  */
 export async function getTourActivityBySlug(slug: string, lang?: string): Promise<WPTourActivity | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const termParams: Record<string, any> = { slug, per_page: 1 };
-    if (lang && lang !== 'en') termParams.lang = lang;
-    const { terms } = await fetchTermsV1('tour-activity', termParams);
-    return terms[0] ? mapV1TermToTourActivity(terms[0]) : null;
-  }
-  const activities = await fetchAPI('/tour-activity', { slug, lang, _fields: TOUR_TAXONOMY_FIELDS });
-  return activities[0] || null;
+  const termParams: Record<string, any> = { slug, per_page: 1 };
+  if (lang && lang !== 'en') termParams.lang = lang;
+  const { terms } = await fetchTermsV1('tour-activity', termParams);
+  return terms[0] ? mapV1TermToTourActivity(terms[0]) : null;
 }
 
 /**
  * Get all tour destinations
  */
 export async function getTourDestinations(params: WPApiParams = {}): Promise<WPTourDestination[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour-destination', params as Record<string, any>);
-    return terms.map(mapV1TermToTourDestination);
-  }
-  return fetchAPI('/tour-destination', { _fields: TOUR_TAXONOMY_FIELDS, ...params });
+  const { terms } = await fetchTermsV1('tour-destination', params as Record<string, any>);
+  return terms.map(mapV1TermToTourDestination);
 }
 
 /**
@@ -1526,37 +1448,18 @@ export async function getAllTourDestinations(
   params: WPApiParams = {},
   opts: { maxPages?: number } = {}
 ): Promise<WPTourDestination[]> {
-  const customApiUrl = getCustomApiUrl();
   const maxPages = Math.max(1, opts.maxPages ?? 20);
 
-  if (customApiUrl) {
-    const perPage = Math.min(Number(params.per_page) || 200, 200);
-    const baseParams: Record<string, any> = { ...params, per_page: perPage };
-    delete baseParams.page;
-
-    const all: WPTourDestination[] = [];
-    for (let page = 1; page <= maxPages; page++) {
-      const { terms } = await fetchTermsV1('tour-destination', { ...baseParams, page });
-      if (!Array.isArray(terms) || terms.length === 0) break;
-      all.push(...terms.map(mapV1TermToTourDestination));
-      if (terms.length < perPage) break;
-    }
-
-    const byId = new Map<number, WPTourDestination>();
-    for (const term of all) byId.set(term.id, term);
-    return Array.from(byId.values());
-  }
-
-  const perPage = Math.min(Number(params.per_page) || 100, 100);
-  const baseParams: WPApiParams = { _fields: TOUR_TAXONOMY_FIELDS, ...params, per_page: perPage };
-  delete (baseParams as Record<string, unknown>).page;
+  const perPage = Math.min(Number(params.per_page) || 200, 200);
+  const baseParams: Record<string, any> = { ...params, per_page: perPage };
+  delete baseParams.page;
 
   const all: WPTourDestination[] = [];
   for (let page = 1; page <= maxPages; page++) {
-    const batch = await fetchAPI('/tour-destination', { ...baseParams, page });
-    if (!Array.isArray(batch) || batch.length === 0) break;
-    all.push(...(batch as WPTourDestination[]));
-    if (batch.length < perPage) break;
+    const { terms } = await fetchTermsV1('tour-destination', { ...baseParams, page });
+    if (!Array.isArray(terms) || terms.length === 0) break;
+    all.push(...terms.map(mapV1TermToTourDestination));
+    if (terms.length < perPage) break;
   }
 
   const byId = new Map<number, WPTourDestination>();
@@ -1568,18 +1471,10 @@ export async function getAllTourDestinations(
  * Get a single tour destination by slug
  */
 export async function getTourDestinationBySlug(slug: string, lang?: string): Promise<WPTourDestination | null> {
-  const customApiUrl = getCustomApiUrl();
-
-  let resolvedTerm: WPTourDestination | null = null;
-  if (customApiUrl) {
-    const termParams: Record<string, any> = { slug, per_page: 1 };
-    if (lang && lang !== 'en') termParams.lang = lang;
-    const { terms } = await fetchTermsV1('tour-destination', termParams);
-    resolvedTerm = terms[0] ? mapV1TermToTourDestination(terms[0]) : null;
-  } else {
-    const destinations = await fetchAPI('/tour-destination', { slug, _fields: TOUR_TAXONOMY_FIELDS });
-    resolvedTerm = destinations[0] || null;
-  }
+  const termParams: Record<string, any> = { slug, per_page: 1 };
+  if (lang && lang !== 'en') termParams.lang = lang;
+  const { terms } = await fetchTermsV1('tour-destination', termParams);
+  const resolvedTerm = terms[0] ? mapV1TermToTourDestination(terms[0]) : null;
 
   if (!resolvedTerm || !lang) {
     return resolvedTerm;
@@ -1615,13 +1510,8 @@ export async function getTourDestinationBySlug(slug: string, lang?: string): Pro
  * to avoid triggering extra language-specific count queries.
  */
 export async function getTourDestinationIdBySlug(slug: string): Promise<number | null> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const { terms } = await fetchTermsV1('tour-destination', { slug, per_page: 1 } as Record<string, any>);
-    return terms[0]?.id ?? null;
-  }
-  const destinations = await fetchAPI('/tour-destination', { slug, _fields: 'id' });
-  return destinations[0]?.id ?? null;
+  const { terms } = await fetchTermsV1('tour-destination', { slug, per_page: 1 } as Record<string, any>);
+  return terms[0]?.id ?? null;
 }
 
 /**
@@ -1990,27 +1880,16 @@ export async function searchToursAdvanced(options: {
  * @returns Array of tours with essential data
  */
 export async function getToursForMegamenu(limit: number = 30, lang?: string): Promise<WPTour[]> {
-  const customApiUrl = getCustomApiUrl();
-  if (customApiUrl) {
-    const result = await fetchToursV1(
-      {
-        per_page: limit,
-        orderby: 'date',
-        order: 'desc',
-        _fields: 'id,slug,title,featured_image_url,tour_meta,tour_terms',
-      },
-      lang
-    );
-    return result.tours;
-  }
-
-  return fetchAPI('/tour', {
-    per_page: limit,
-    orderby: 'date',
-    order: 'desc',
-    _fields: 'id,slug,title,featured_image_url,tour_meta,tour_terms',
-    ...(lang && { lang }),
-  });
+  const result = await fetchToursV1(
+    {
+      per_page: limit,
+      orderby: 'date',
+      order: 'desc',
+      _fields: 'id,slug,title,featured_image_url,tour_meta,tour_terms',
+    },
+    lang
+  );
+  return result.tours;
 }
 
 /**

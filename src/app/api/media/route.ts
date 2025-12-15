@@ -49,84 +49,91 @@ function isAllowedMediaUrl(url: URL): boolean {
 }
 
 export async function GET(request: Request): Promise<Response> {
+  const { searchParams } = new URL(request.url);
+  const raw = searchParams.get('url');
+
+  if (!raw) {
+    return new Response('Missing url', { status: 400 });
+  }
+
+  let target: URL;
   try {
-    const { searchParams } = new URL(request.url);
-    const raw = searchParams.get('url');
+    target = new URL(raw);
+  } catch {
+    return new Response('Invalid url', { status: 400 });
+  }
 
-    if (!raw) {
-      return new Response('Missing url', { status: 400 });
-    }
+  if (!isAllowedMediaUrl(target)) {
+    return new Response('URL not allowed', { status: 400 });
+  }
 
-    let target: URL;
-    try {
-      target = new URL(raw);
-    } catch {
-      return new Response('Invalid url', { status: 400 });
-    }
+  const username = getEnv('WORDPRESS_AUTH_USER') || '';
+  const password = getEnv('WORDPRESS_AUTH_PASS') || '';
+  const hasAuth = Boolean(username && password);
 
-    if (!isAllowedMediaUrl(target)) {
-      return new Response('URL not allowed', { status: 400 });
-    }
+  const headers: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-MediaProxy/1.0)',
+    Accept: request.headers.get('Accept') || '*/*',
+  };
 
-    const username = getEnv('WORDPRESS_AUTH_USER') || '';
-    const password = getEnv('WORDPRESS_AUTH_PASS') || '';
-    const hasAuth = Boolean(username && password);
+  if (hasAuth) {
+    headers.Authorization = `Basic ${toBase64(`${username}:${password}`)}`;
+  }
 
-    const headers: Record<string, string> = {
-      // Some origins block unknown UAs.
-      'User-Agent': 'Mozilla/5.0 (compatible; Qualitour-MediaProxy/1.0)',
-      // Optional: pass through accept to help origin choose correct format.
-      Accept: request.headers.get('Accept') || '*/*',
-    };
+  // Use a short timeout to prevent CPU from being held up waiting
+  // on slow upstream connections (especially Local Sites tunnels).
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    if (hasAuth) {
-      headers.Authorization = `Basic ${toBase64(`${username}:${password}`)}`;
-    }
-
-    let upstream: Response;
-    try {
-      upstream = await fetch(target.toString(), {
-        headers,
-        // Cache at the edge where possible (Cloudflare Workers fetch option).
-        cf: { cacheEverything: true, cacheTtl: 60 * 60 * 24 * 7 },
-      } as any);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      return new Response(
-        `Fetch failed. host=${target.hostname} path=${target.pathname}\n` +
-          `hasAuth=${hasAuth}\n` +
-          `error=${message}`,
-        { status: 502, headers: { 'Cache-Control': 'no-store' } }
-      );
-    }
-
-    if (!upstream.ok) {
-      const wwwAuth = upstream.headers.get('www-authenticate') || '';
-      return new Response(
-        `Upstream error: ${upstream.status}\n` +
-          `host=${target.hostname} path=${target.pathname}\n` +
-          `hasAuth=${hasAuth}\n` +
-          (wwwAuth ? `www-authenticate=${wwwAuth}\n` : ''),
-        { status: upstream.status, headers: { 'Cache-Control': 'no-store' } }
-      );
-    }
-
-    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
-    const cacheControl = upstream.headers.get('cache-control');
-
-    return new Response(upstream.body, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        // Prefer origin cache-control if present, otherwise allow long-term caching.
-        'Cache-Control': cacheControl || 'public, max-age=31536000, immutable',
+  let upstream: Response;
+  try {
+    upstream = await fetch(target.toString(), {
+      headers,
+      signal: controller.signal,
+      // Tell Cloudflare to cache at edge aggressively.
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 60 * 60 * 24 * 30, // 30 days
+        cacheTtlByStatus: {
+          '200-299': 60 * 60 * 24 * 30, // 30 days for success
+          '404': 60, // 1 minute for not found
+          '500-599': 0, // Don't cache errors
+        },
       },
-    });
+    } as any);
   } catch (e) {
+    clearTimeout(timeoutId);
     const message = e instanceof Error ? e.message : String(e);
-    return new Response(`Internal error: ${message}`, {
-      status: 500,
+    const isTimeout = message.includes('abort') || message.includes('timeout');
+    return new Response(
+      isTimeout ? 'Upstream timeout' : `Fetch failed: ${message}`,
+      {
+        status: isTimeout ? 504 : 502,
+        headers: { 'Cache-Control': 'no-store' },
+      }
+    );
+  }
+
+  clearTimeout(timeoutId);
+
+  if (!upstream.ok) {
+    return new Response(`Upstream error: ${upstream.status}`, {
+      status: upstream.status,
       headers: { 'Cache-Control': 'no-store' },
     });
   }
+
+  const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+
+  // Stream the response body directly to minimize CPU usage.
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'Content-Type': contentType,
+      // Long-term cache for images - they rarely change.
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      // Help Cloudflare's edge cache.
+      'CDN-Cache-Control': 'public, max-age=31536000',
+    },
+  });
 }

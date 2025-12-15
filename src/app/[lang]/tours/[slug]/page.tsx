@@ -7,6 +7,7 @@ import TourReviews from '@/components/TourReviews';
 import TourSidebarForm from '@/components/TourSidebarForm';
 import type { Locale } from '@/i18n/config';
 import { i18n } from '@/i18n/config';
+import { wpUrl } from '@/lib/wp-url';
 
 // Revalidate tour pages every 15 minutes
 // This enables ISR so pages are served from cache with minimal CPU usage
@@ -38,18 +39,6 @@ function normalizeMediaUrl(value: unknown): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.replace(/\s+/g, '');
-}
-
-function proxyIfProtectedMedia(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.endsWith('.localsite.io')) {
-      return `/api/media?url=${encodeURIComponent(url)}`;
-    }
-  } catch {
-    // ignore
-  }
-  return url;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: Locale; slug: string }> }) {
@@ -121,7 +110,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
     normalizeMediaUrl((tour.featured_image_url as any)?.full) ||
     normalizeMediaUrl(tour.featured_image_url?.full?.url);
 
-  const renderImageUrl = imageUrl ? proxyIfProtectedMedia(imageUrl) : null;
+  const renderImageUrl = imageUrl ? wpUrl(imageUrl) : null;
 
   // Get sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
