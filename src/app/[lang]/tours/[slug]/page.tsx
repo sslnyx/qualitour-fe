@@ -115,7 +115,52 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
   // Get sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
 
-  // Extract tour details
+  // OPTIMIZATION: Strip heavy unused metadata from page builder before passing to Client Component.
+  // This drastically reduces RSC serialization cost (CPU usage) on Cloudflare Workers.
+  const optimizePageBuilderItem = (item: any): any => {
+    if (!item) return null;
+
+    // Only keep essential fields
+    const optimized: any = {
+      type: item.type
+    };
+
+    if (item.value) {
+      optimized.value = {};
+      // Allowlist of fields needed by TourTabs/Overview/Itinerary
+      const allowList = ['id', 'title', 'caption', 'content', 'tabs', 'gallery', 'image', 'url', 'width', 'height', 'icon', 'link', 'target'];
+
+      allowList.forEach(key => {
+        if (item.value[key] !== undefined) {
+          optimized.value[key] = item.value[key];
+        }
+      });
+    }
+
+    // Recursively optimize children
+    if (item.items && Array.isArray(item.items)) {
+      optimized.items = item.items.map(optimizePageBuilderItem).filter(Boolean);
+    }
+
+    return optimized;
+  };
+
+  // Create lightweight tour object for Client Component
+  // We clone the tour and replace goodlayers_data with optimized version
+  const optimizedTour = {
+    ...tour,
+    goodlayers_data: {
+      ...tour.goodlayers_data,
+      // Map sections or page_builder using our optimizer
+      sections: sections.map((section: any) => ({
+        ...section,
+        items: section.items?.map(optimizePageBuilderItem) || []
+      })),
+      page_builder: undefined // Ensure legacy field doesn't leak
+    }
+  };
+
+  // For sections extraction below (server-side usage), use original data
   const detailSection = sections.find(
     (section: any) => section.value?.id === 'detail' || section.value?.id === 'details'
   );
@@ -143,6 +188,8 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ... [Rest of JSX uses optimizedTour inside TourTabs] ... */}
+      {/* ... Update TourTabs passed prop ... */}
       {/* Premium Hero Section */}
       <section className="relative min-h-[50vh] md:min-h-[60vh] overflow-hidden">
         {renderImageUrl ? (
@@ -274,7 +321,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
             <div className="lg:col-span-2 space-y-8">
               {/* Tabbed Content Card */}
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <TourTabs tour={tour} />
+                <TourTabs tour={optimizedTour} />
               </div>
 
               {/* Trust Indicators */}
