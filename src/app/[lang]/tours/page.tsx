@@ -1,8 +1,6 @@
-import { getAllTourDestinations, getTourActivities, searchToursAdvanced } from '@/lib/wordpress';
+import { getAllTourDestinations, getTourActivities, getToursPaged } from '@/lib/wordpress';
 import type { WPTour, WPTourDestination, WPTourActivity } from '@/lib/wordpress';
-import { TourCard } from '@/components/TourCard';
-import { TourFilter } from '@/components/TourFilter';
-import Link from 'next/link';
+import { TourFilterSidebar } from '@/components/TourFilterSidebar';
 import { type Locale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 
@@ -13,7 +11,7 @@ export const metadata = {
 
 interface ToursPageProps {
   params: Promise<{ lang: Locale }>;
-  searchParams: Promise<{ 
+  searchParams: Promise<{
     search?: string;
     destination?: string;
     activity?: string;
@@ -25,60 +23,29 @@ interface ToursPageProps {
 export default async function ToursPage({ params, searchParams }: ToursPageProps) {
   const { lang } = await params;
   const dict = await getDictionary(lang);
-  const searchParamsResolved = await searchParams;
-  
-  let tours: WPTour[] = [];
+
+  let allTours: WPTour[] = [];
   let destinations: WPTourDestination[] = [];
   let activities: WPTourActivity[] = [];
   let error: string | null = null;
-  let totalTours = 0;
-  let totalPages = 0;
-  let isFallbackToEnglish = false;
-
-  // Parse URL parameters for filtering/pagination
-  const page = searchParamsResolved?.page ? parseInt(searchParamsResolved.page) : 1;
-  const perPage = 12;
-  const searchQuery = searchParamsResolved?.search || '';
-  const selectedDestination = searchParamsResolved?.destination || '';
-  const selectedActivity = searchParamsResolved?.activity || '';
-
-  // Build the locale prefix for links
-  const localePrefix = lang === 'en' ? '' : `/${lang}`;
 
   try {
-    // Fetch destinations and activities for filter dropdowns
-    // Use the same paging shape as the mega-menu to let request-level dedupe kick in.
-    // (Layout fetches `getAllTourDestinations` which calls `/tour-destination?page=1&per_page=100`.)
-    destinations = await getAllTourDestinations({ per_page: 100, lang }, { maxPages: 1 });
-    activities = await getTourActivities({ per_page: 100, lang });
+    // Fetch all data in parallel for faster loading
+    const [toursResult, destinationsResult, activitiesResult] = await Promise.all([
+      // Fetch all tours at once (up to 300) for client-side filtering
+      getToursPaged({ per_page: 300, lang: lang !== 'en' ? lang : undefined }),
+      getAllTourDestinations({ per_page: 100, lang }, { maxPages: 1 }),
+      getTourActivities({ per_page: 100, lang }),
+    ]);
 
-    const searchResult = await searchToursAdvanced({
-      query: searchQuery,
-      destination: selectedDestination,
-      activity: selectedActivity,
-      page,
-      per_page: perPage,
-      lang: lang !== 'en' ? lang : undefined,
-    });
-
-    tours = searchResult.tours;
-    totalTours = searchResult.total;
-    totalPages = searchResult.totalPages;
+    allTours = toursResult.tours;
+    destinations = destinationsResult;
+    activities = activitiesResult;
 
     // Fallback to English if no tours found and not already English
-    if ((!tours || tours.length === 0) && lang !== 'en') {
-      const fallbackResult = await searchToursAdvanced({
-        query: searchQuery,
-        destination: selectedDestination,
-        activity: selectedActivity,
-        page,
-        per_page: perPage,
-      });
-
-      tours = fallbackResult.tours;
-      totalTours = fallbackResult.total;
-      totalPages = fallbackResult.totalPages;
-      isFallbackToEnglish = true;
+    if ((!allTours || allTours.length === 0) && lang !== 'en') {
+      const fallbackResult = await getToursPaged({ per_page: 300 });
+      allTours = fallbackResult.tours;
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch tours';
@@ -87,197 +54,35 @@ export default async function ToursPage({ params, searchParams }: ToursPageProps
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TourFilter
-          destinations={destinations}
-          activities={activities}
-          currentQuery={searchQuery}
-          currentDestination={selectedDestination}
-          currentActivity={selectedActivity}
-          currentPage={page}
-          lang={lang}
-        />
-        <div className="flex items-center justify-center p-4 min-h-[60vh]">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-lg">
-            <h2 className="text-lg font-semibold mb-2">Error Loading Tours</h2>
-            <p className="mb-2">{error}</p>
-            <p className="text-sm text-red-600">
-              Check: {process.env.NEXT_PUBLIC_WORDPRESS_API_URL}
-            </p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-lg">
+          <h2 className="text-lg font-semibold mb-2">Error Loading Tours</h2>
+          <p className="mb-2">{error}</p>
+          <p className="text-sm text-red-600">
+            Check: {process.env.NEXT_PUBLIC_WORDPRESS_API_URL}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!tours || tours.length === 0) {
+  if (!allTours || allTours.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <TourFilter
-          destinations={destinations}
-          activities={activities}
-          currentQuery={searchQuery}
-          currentDestination={selectedDestination}
-          currentActivity={selectedActivity}
-          currentPage={page}
-          lang={lang}
-        />
-        <div className="flex items-center justify-center p-4 min-h-[60vh]">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">No Tours Found</h1>
-            <p className="text-gray-600 mb-6">
-              {searchQuery || selectedDestination || selectedActivity
-                ? 'Try adjusting your filters or search terms'
-                : 'Check back later for exciting tour packages!'}
-            </p>
-            <Link href={`${localePrefix}/tours`} className="inline-block px-6 py-2 bg-[#f7941e] text-white rounded-lg hover:bg-[#d67a1a]">
-              View All Tours
-            </Link>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">No Tours Found</h1>
+          <p className="text-gray-600">Check back later for exciting tour packages!</p>
         </div>
       </div>
     );
   }
-
-  // Build pagination URLs with current filters
-  const buildPaginationUrl = (pageNum: number) => {
-    const params = new URLSearchParams();
-    params.append('page', pageNum.toString());
-    if (searchQuery) params.append('search', searchQuery);
-    if (selectedDestination) params.append('destination', selectedDestination);
-    if (selectedActivity) params.append('activity', selectedActivity);
-    return `${localePrefix}/tours?${params.toString()}`;
-  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Filter Component */}
-      <TourFilter
-        destinations={destinations}
-        activities={activities}
-        currentQuery={searchQuery}
-        currentDestination={selectedDestination}
-        currentActivity={selectedActivity}
-        currentPage={page}
-        lang={lang}
-      />
-
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl font-bold text-gray-900">
-            {searchQuery || selectedDestination || selectedActivity ? 'Search Results' : 'Our Tours'}
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            {totalTours > 0 
-              ? `${totalTours} Tours Found` 
-              : `Discover amazing destinations`}
-          </p>
-          {isFallbackToEnglish && (
-            <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-              No tours found for this language. Showing English tours instead.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tours Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {tours.map((tour) => (
-            <TourCard
-              key={tour.id}
-              tour={tour}
-              lang={lang}
-              style="grid-with-frame"
-              showRating={true}
-              showInfo={['duration-text']}
-              excerptWords={14}
-              imageSize="large"
-            />
-          ))}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-12 flex items-center justify-center gap-2">
-            {/* Previous Button */}
-            {page > 1 && (
-              <Link
-                href={buildPaginationUrl(page - 1)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-              >
-                ← Previous
-              </Link>
-            )}
-
-            {/* Page Numbers */}
-            <div className="flex gap-2">
-              {/* First page */}
-              {page > 3 && (
-                <>
-                  <Link
-                    href={buildPaginationUrl(1)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-                  >
-                    1
-                  </Link>
-                  {page > 4 && <span className="px-2 py-2">...</span>}
-                </>
-              )}
-
-              {/* Pages around current page */}
-              {Array.from({ length: 5 }, (_, i) => {
-                const pageNum = page - 2 + i;
-                if (pageNum < 1 || pageNum > totalPages) return null;
-                return (
-                  <Link
-                    key={pageNum}
-                    href={buildPaginationUrl(pageNum)}
-                    className={`px-4 py-2 border rounded-lg ${
-                      pageNum === page
-                        ? 'bg-[#f7941e] text-white border-[#f7941e]'
-                        : 'border-gray-300 hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    {pageNum}
-                  </Link>
-                );
-              })}
-
-              {/* Last page */}
-              {page < totalPages - 2 && (
-                <>
-                  {page < totalPages - 3 && <span className="px-2 py-2">...</span>}
-                  <Link
-                    href={buildPaginationUrl(totalPages)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-                  >
-                    {totalPages}
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Next Button */}
-            {page < totalPages && (
-              <Link
-                href={buildPaginationUrl(page + 1)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
-              >
-                Next →
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* Page Info */}
-        {totalTours > 0 && (
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Showing {(page - 1) * perPage + 1} - {Math.min(page * perPage, totalTours)} of {totalTours} tours
-          </p>
-        )}
-      </div>
-    </div>
+    <TourFilterSidebar
+      tours={allTours}
+      destinations={destinations}
+      activities={activities}
+      lang={lang}
+    />
   );
 }
