@@ -1,10 +1,34 @@
-import { getTourBySlug } from '@/lib/wordpress';
+import { getTourBySlug, getTours } from '@/lib/wordpress';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import TourTabs from '@/components/TourTabs';
 import TourReviews from '@/components/TourReviews';
 import type { Locale } from '@/i18n/config';
+import { i18n } from '@/i18n/config';
+
+/**
+ * Pre-generate tour detail pages at build time.
+ * This reduces runtime compute on Cloudflare Workers free tier.
+ * Pages not pre-generated will be rendered on-demand and cached.
+ */
+export async function generateStaticParams() {
+  try {
+    // Fetch up to 100 tours for static generation
+    const tours = await getTours({ per_page: 100 });
+
+    // Generate params for all locales
+    return i18n.locales.flatMap((lang) =>
+      tours.map((tour) => ({
+        lang,
+        slug: tour.slug,
+      }))
+    );
+  } catch (error) {
+    console.error('[generateStaticParams] Failed to fetch tours:', error);
+    return [];
+  }
+}
 
 function normalizeMediaUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -29,7 +53,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: Loc
   try {
     const { slug, lang } = await params;
     const tour = await getTourBySlug(slug, lang);
-    
+
     if (!tour) {
       return {
         title: 'Tour Not Found',
@@ -95,10 +119,10 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
     normalizeMediaUrl(tour.featured_image_url?.full?.url);
 
   const renderImageUrl = imageUrl ? proxyIfProtectedMedia(imageUrl) : null;
-  
+
   // Get sections - works with both old page_builder and new optimized sections
   const sections = tour.goodlayers_data?.sections || (tour.goodlayers_data as any)?.page_builder || [];
-  
+
   // Extract tour details from page builder detail/details section
   const detailSection = sections.find(
     (section: any) => section.value?.id === 'detail' || section.value?.id === 'details'
@@ -106,13 +130,13 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
   const detailItems = detailSection && 'items' in detailSection ? detailSection.items : [];
   const iconListItem = detailItems.find((item: any) => item.type === 'icon-list');
   const tourDetails = iconListItem?.value?.tabs || [];
-  
+
   // Parse tour details from icon-list
   const durationDetail = tourDetails.find((d: any) => d.title?.includes('Days') || d.title?.includes('Night'))?.title;
   const groupSizeDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('people') || d.title?.toLowerCase().includes('pax'))?.title;
   const datesDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('every') || d.title?.match(/\d{2}\/[A-Za-z]{3}\/\d{4}/))?.title;
   const tourCodeDetail = tourDetails.find((d: any) => d.title?.toLowerCase().includes('tour code'))?.title;
-  
+
   // Fallback to tour_meta
   const price = tour.tour_meta?.price;
   const duration = durationDetail || tour.tour_meta?.duration_text || tour.tour_meta?.duration;
@@ -121,8 +145,8 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
   const minPeople = tour.tour_meta?.min_people;
   const maxPeople = tour.tour_meta?.max_people;
   const groupSize = groupSizeDetail || (minPeople && maxPeople ? `${minPeople} - ${maxPeople} people` : maxPeople || minPeople);
-  const rating = typeof tour.tour_meta?.rating === 'object' 
-    ? tour.tour_meta.rating.score 
+  const rating = typeof tour.tour_meta?.rating === 'object'
+    ? tour.tour_meta.rating.score
     : tour.tour_meta?.rating;
   const reviewCount = typeof tour.tour_meta?.rating === 'object'
     ? tour.tour_meta.rating.reviewer
@@ -136,8 +160,8 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
       {/* Back Button */}
       <div className="bg-white border-b">
         <div className="container-qualitour py-4">
-          <Link 
-            href={`${localePrefix}/tours`} 
+          <Link
+            href={`${localePrefix}/tours`}
             className="text-[#f7941e] hover:text-[#d67a1a] flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +195,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
           <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <div className="container-qualitour">
-              <h1 
+              <h1
                 className="text-2xl md:text-5xl font-bold text-white mb-4"
                 dangerouslySetInnerHTML={{ __html: tour.title.rendered }}
               />
@@ -191,7 +215,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
           {/* Main Content */}
           <div className="lg:col-span-2">
             {!renderImageUrl && (
-              <h1 
+              <h1
                 className="text-4xl font-bold text-gray-900 mb-6"
                 dangerouslySetInnerHTML={{ __html: tour.title.rendered }}
               />
@@ -288,7 +312,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
                       <div className="text-sm text-gray-600 mb-2">Categories</div>
                       <div className="flex flex-wrap gap-2">
                         {categories.map((category) => (
-                          <span 
+                          <span
                             key={category.id}
                             className="px-2 py-1 bg-orange-50 text-[#f7941e] text-xs rounded-full"
                           >
@@ -334,7 +358,7 @@ export default async function TourPage({ params }: { params: Promise<{ lang: Loc
           <h2 className="text-3xl font-bold text-gray-900 mb-8">What Our Guests Say</h2>
           <div className="bg-white rounded-lg shadow-lg p-8">
             {/* Tour-specific reviews (filtered by destination/keywords) */}
-            <TourReviews 
+            <TourReviews
               tourTitle={tour.title.rendered}
               tourDestination={
                 destinationSlug

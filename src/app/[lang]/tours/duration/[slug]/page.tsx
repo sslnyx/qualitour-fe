@@ -1,8 +1,28 @@
-import { getTourDurationBySlug, getToursPaged } from '@/lib/wordpress';
+import { getTourDurationBySlug, getToursPaged, getTourDurations } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
-import { type Locale } from '@/i18n/config';
+import { type Locale, i18n } from '@/i18n/config';
 import { notFound } from 'next/navigation';
 import type { WPTour } from '@/lib/wordpress/types';
+
+/**
+ * Pre-generate duration pages at build time.
+ * Reduces runtime compute on Cloudflare Workers free tier.
+ */
+export async function generateStaticParams() {
+  try {
+    const durations = await getTourDurations({ per_page: 100 });
+
+    return i18n.locales.flatMap((lang) =>
+      durations.map((duration) => ({
+        lang,
+        slug: duration.slug,
+      }))
+    );
+  } catch (error) {
+    console.error('[generateStaticParams] Failed to fetch durations:', error);
+    return [];
+  }
+}
 
 interface Props {
   params: Promise<{ lang: Locale; slug: string }>;
@@ -92,11 +112,10 @@ export default async function TourDurationPage({ params, searchParams }: Props) 
                 <a
                   key={pageNum}
                   href={`?page=${pageNum}`}
-                  className={`px-3 py-2 rounded ${
-                    pageNum === currentPage
+                  className={`px-3 py-2 rounded ${pageNum === currentPage
                       ? 'bg-[#f7941e] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {pageNum}
                 </a>

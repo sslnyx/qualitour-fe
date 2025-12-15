@@ -1,8 +1,28 @@
-import { getTourDestinationBySlug, searchToursAdvanced } from '@/lib/wordpress';
+import { getTourDestinationBySlug, searchToursAdvanced, getAllTourDestinations } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
-import { type Locale } from '@/i18n/config';
+import { type Locale, i18n } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
 import Link from 'next/link';
+
+/**
+ * Pre-generate destination pages at build time.
+ * Reduces runtime compute on Cloudflare Workers free tier.
+ */
+export async function generateStaticParams() {
+  try {
+    const destinations = await getAllTourDestinations({ per_page: 100 });
+
+    return i18n.locales.flatMap((lang) =>
+      destinations.map((dest) => ({
+        lang,
+        slug: dest.slug,
+      }))
+    );
+  } catch (error) {
+    console.error('[generateStaticParams] Failed to fetch destinations:', error);
+    return [];
+  }
+}
 
 interface Props {
   params: Promise<{ lang: Locale; slug: string }>;
@@ -12,7 +32,7 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { slug, lang } = await params;
   const term = await getTourDestinationBySlug(slug, lang);
-  
+
   // Fallback title if term not found
   const name = term ? term.name : slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -31,7 +51,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
 
   // Get the destination term for metadata with language-specific count
   let term = await getTourDestinationBySlug(slug, lang);
-  
+
   // If term doesn't exist in WP, create a virtual one for display
   if (!term) {
     term = {
@@ -79,7 +99,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
     <div className="container-qualitour py-8">
       <h1 className="text-3xl font-bold mb-2">{term.name}</h1>
       {term.description && (
-        <div 
+        <div
           className="text-gray-600 mb-8"
           dangerouslySetInnerHTML={{ __html: term.description }}
         />
@@ -87,7 +107,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       {totalTourCount > 0 && (
         <p className="text-sm text-gray-500 mb-6">{totalTourCount} tours found</p>
       )}
-      
+
       {tours.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tours.map((tour: any) => (
@@ -105,11 +125,10 @@ export default async function DestinationPage({ params, searchParams }: Props) {
             <Link
               key={p}
               href={`${localePrefix}/tours/destination/${slug}?page=${p}`}
-              className={`px-4 py-2 rounded ${
-                p === currentPage
+              className={`px-4 py-2 rounded ${p === currentPage
                   ? 'bg-[#f7941e] text-white'
                   : 'bg-gray-100 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {p}
             </Link>

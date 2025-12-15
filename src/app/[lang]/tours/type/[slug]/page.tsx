@@ -1,9 +1,29 @@
-import { getTourTypeBySlug, getToursPaged } from '@/lib/wordpress';
+import { getTourTypeBySlug, getToursPaged, getTourTypes } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
-import { type Locale } from '@/i18n/config';
+import { type Locale, i18n } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import type { WPTour } from '@/lib/wordpress/types';
 import { normalizeWpText } from '@/lib/wordpress/text';
+
+/**
+ * Pre-generate tour type pages at build time.
+ * Reduces runtime compute on Cloudflare Workers free tier.
+ */
+export async function generateStaticParams() {
+  try {
+    const types = await getTourTypes({ per_page: 100 });
+
+    return i18n.locales.flatMap((lang) =>
+      types.map((type) => ({
+        lang,
+        slug: type.slug,
+      }))
+    );
+  } catch (error) {
+    console.error('[generateStaticParams] Failed to fetch tour types:', error);
+    return [];
+  }
+}
 
 const VIKING_HERO_BG = 'http://qualitour.local/wp-content/uploads/2020/10/tour_cover2-scaled.jpg';
 const VIKING_INTRO_IMAGE = 'http://qualitour.local/wp-content/uploads/2023/07/81e60901eb82dcb92a7314843431d657c2be56c3799dbd9f384049e537f7f127-scaled.webp';
@@ -194,11 +214,10 @@ export default async function TourTypePage({
                   <a
                     key={p}
                     href={`${localePrefix}/tours/type/${type}?page=${p}`}
-                    className={`px-3 py-2 rounded transition ${
-                      p === page
+                    className={`px-3 py-2 rounded transition ${p === page
                         ? 'bg-[#f7941e] text-white'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                    }`}
+                      }`}
                   >
                     {p}
                   </a>

@@ -1,8 +1,28 @@
-import { getTourActivityBySlug, searchToursAdvanced } from '@/lib/wordpress';
+import { getTourActivityBySlug, searchToursAdvanced, getTourActivities } from '@/lib/wordpress';
 import { TourCard } from '@/components/TourCard';
 import { notFound } from 'next/navigation';
-import { type Locale } from '@/i18n/config';
+import { type Locale, i18n } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
+
+/**
+ * Pre-generate activity pages at build time.
+ * Reduces runtime compute on Cloudflare Workers free tier.
+ */
+export async function generateStaticParams() {
+  try {
+    const activities = await getTourActivities({ per_page: 100 });
+
+    return i18n.locales.flatMap((lang) =>
+      activities.map((activity) => ({
+        lang,
+        slug: activity.slug,
+      }))
+    );
+  } catch (error) {
+    console.error('[generateStaticParams] Failed to fetch activities:', error);
+    return [];
+  }
+}
 
 interface Props {
   params: Promise<{ lang: Locale; slug: string }>;
@@ -12,7 +32,7 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const term = await getTourActivityBySlug(slug);
-  
+
   if (!term) {
     return {
       title: 'Activity Not Found',
@@ -63,7 +83,7 @@ export default async function ActivityPage({ params, searchParams }: Props) {
     <div className="container-qualitour py-8">
       <h1 className="text-3xl font-bold mb-2">{term.name}</h1>
       {term.description && (
-        <div 
+        <div
           className="text-gray-600 mb-8"
           dangerouslySetInnerHTML={{ __html: term.description }}
         />
@@ -71,7 +91,7 @@ export default async function ActivityPage({ params, searchParams }: Props) {
       {totalTourCount > 0 && (
         <p className="text-sm text-gray-500 mb-6">{totalTourCount} tours found</p>
       )}
-      
+
       {tours.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tours.map((tour: any) => (
@@ -89,11 +109,10 @@ export default async function ActivityPage({ params, searchParams }: Props) {
             <a
               key={p}
               href={`/tours/activity/${slug}?page=${p}`}
-              className={`px-4 py-2 rounded ${
-                p === currentPage
+              className={`px-4 py-2 rounded ${p === currentPage
                   ? 'bg-[#f7941e] text-white'
                   : 'bg-gray-100 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {p}
             </a>
