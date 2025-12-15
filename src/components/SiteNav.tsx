@@ -92,11 +92,12 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
     [router]
   );
 
+  // Disabled manual prefetching to save CPU on Cloudflare Workers
   const intentPrefetchProps = (href: string) => ({
-    onMouseEnter: () => prefetchOnIntent(href),
-    onFocus: () => prefetchOnIntent(href),
-    onTouchStart: () => prefetchOnInteraction(href),
-    onPointerDown: () => prefetchOnInteraction(href),
+    // onMouseEnter: () => prefetchOnIntent(href), // CPU KILLER
+    // onFocus: () => prefetchOnIntent(href),
+    // onTouchStart: () => prefetchOnInteraction(href),
+    // onPointerDown: () => prefetchOnInteraction(href),
   });
 
   const t = (key: string, defaultValue: string = key) => dict?.navigation?.[key] || defaultValue;
