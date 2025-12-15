@@ -6,6 +6,7 @@ import { getLocalePrefix } from '@/i18n/config';
 import { getGoogleReviews } from '@/lib/wordpress/api';
 import TransferReviewsCarousel from '@/components/TransferReviewsCarousel';
 import { wpUrl } from '@/lib/wp-url';
+import VisaInquirySection from '@/components/VisaInquirySection';
 
 const VISA_HERO_BG = wpUrl('/wp-content/uploads/2023/08/nuno-alberto-MykFFC5zolE-unsplash1-scaled.jpg');
 
@@ -240,7 +241,7 @@ export default async function VisaPage({
               <p className="text-text-muted mb-6">
                 {lang === 'zh'
                   ? '具体材料可能因签证类型与个人情况不同，请以我们最终确认的清单为准。'
-                  : 'Requirements may vary by visa type and personal situation. We’ll confirm the final checklist with you.'}
+                  : "Requirements may vary by visa type and personal situation. We'll confirm the final checklist with you."}
               </p>
 
               <ul className="space-y-3">
@@ -252,22 +253,20 @@ export default async function VisaPage({
                 ))}
               </ul>
 
-              <div className="mt-8">
-                <Link
-                  href={`${localePrefix}/contact`}
-                  className="inline-block w-full text-center px-6 py-3 bg-[#f7941e] hover:bg-[#e68a1c] text-white font-semibold rounded-md transition-colors"
-                >
-                  {lang === 'zh' ? '联系并开始申请' : 'Contact us to get started'}
-                </Link>
-              </div>
-
-              <p className="text-xs text-text-muted mt-4">
+              <p className="text-xs text-text-muted mt-6">
                 {lang === 'zh'
                   ? '提示：签证政策可能调整，建议尽早规划并预留办理时间。'
                   : 'Note: Visa policies can change. Plan ahead and allow sufficient processing time.'}
               </p>
             </div>
           </div>
+        </Container>
+      </section>
+
+      {/* Visa Inquiry Form Section */}
+      <section className="py-16 md:py-24">
+        <Container>
+          <VisaInquirySection lang={lang} />
         </Container>
       </section>
 
@@ -312,7 +311,7 @@ export default async function VisaPage({
             <p className="text-lg mb-8 opacity-90">
               {lang === 'zh'
                 ? '告诉我们您的出行计划，我们会协助您理清材料并推进申请。'
-                : 'Tell us your travel plan and we’ll help you move the application forward with clarity and care.'}
+                : "Tell us your travel plan and we'll help you move the application forward with clarity and care."}
             </p>
             <Link
               href={`${localePrefix}/contact`}
@@ -326,3 +325,4 @@ export default async function VisaPage({
     </main>
   );
 }
+

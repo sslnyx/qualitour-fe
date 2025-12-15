@@ -109,8 +109,8 @@ Website Display (with smart filtering by tour)
 In `.env.local`:
 ```env
 # SerpAPI Configuration
-SERPAPI_KEY=c4ad56c032c3a970bf5e5e143f36037ed4095b10fddc2fb65de6d6c6ad2e6bd4
-NEXT_PUBLIC_SERPAPI_KEY=c4ad56c032c3a970bf5e5e143f36037ed4095b10fddc2fb65de6d6c6ad2e6bd4
+SERPAPI_KEY=your-serpapi-key-here
+NEXT_PUBLIC_SERPAPI_KEY=your-serpapi-key-here
 
 # Sync authentication (optional, auto-generated)
 REVIEWS_SYNC_KEY=sync-key-qualitour.local
@@ -121,7 +121,7 @@ REVIEWS_SYNC_KEY=sync-key-qualitour.local
 In `wp-config.php` (optional for extra security):
 ```php
 define('QUALITOUR_SYNC_KEY', 'your-secret-sync-key');
-define('SERPAPI_KEY', 'c4ad56c032c3a970bf5e5e143f36037ed4095b10fddc2fb65de6d6c6ad2e6bd4');
+define('SERPAPI_KEY', 'your-serpapi-key-here');
 ```
 
 ---

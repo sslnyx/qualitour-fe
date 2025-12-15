@@ -37,6 +37,21 @@ export function getWpBaseUrl(): string {
 }
 
 /**
+ * Check if a URL needs to go through the media proxy (for authenticated .localsite.io domains)
+ */
+function proxyIfProtectedMedia(url: string): string {
+    try {
+        const parsed = new URL(url);
+        if (parsed.hostname.endsWith('.localsite.io')) {
+            return `/api/media?url=${encodeURIComponent(url)}`;
+        }
+    } catch {
+        // ignore
+    }
+    return url;
+}
+
+/**
  * Convert a local WordPress URL to use the current environment's WordPress base.
  * Useful for hardcoded local URLs that need to work in production.
  * 
@@ -44,16 +59,18 @@ export function getWpBaseUrl(): string {
  * @returns Fixed URL using the current environment's WordPress base
  */
 export function wpUrl(localUrl: string): string {
-    // If it's a relative path, just return it
+    // If it's a relative path, build full URL and check if proxying needed
     if (localUrl.startsWith('/')) {
-        return `${getWpBaseUrl()}${localUrl}`;
+        const fullUrl = `${getWpBaseUrl()}${localUrl}`;
+        return proxyIfProtectedMedia(fullUrl);
     }
 
     // If it's already a full URL, extract the path and rebuild
     try {
         const parsed = new URL(localUrl);
         const path = parsed.pathname + parsed.search + parsed.hash;
-        return `${getWpBaseUrl()}${path}`;
+        const fullUrl = `${getWpBaseUrl()}${path}`;
+        return proxyIfProtectedMedia(fullUrl);
     } catch {
         return localUrl;
     }
