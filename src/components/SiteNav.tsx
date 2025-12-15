@@ -176,7 +176,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
             style={{ paddingTop: '8px', paddingBottom: '8px' }}
             {...intentPrefetchProps(localePrefix + '/')}
           >
-            <Image 
+            <Image
               src={QualitourLogo}
               alt="Qualitour"
               width={175}
@@ -187,272 +187,280 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
           </Link>
           {/* Desktop Nav */}
           <ul className="hidden md:flex items-center space-x-2 lg:space-x-4">
-          <li>
-            <Link
-              prefetch={false}
-              href={localePrefix + '/'}
-              className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
-              {...intentPrefetchProps(localePrefix + '/')}
+            <li>
+              <Link
+                prefetch={false}
+                href={localePrefix + '/'}
+                className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
+                {...intentPrefetchProps(localePrefix + '/')}
+              >
+                {tc('home', 'Home')}
+              </Link>
+            </li>
+            <li
+              className="relative"
+              onMouseEnter={() => {
+                if (servicesMouseOutTimerRef.current) {
+                  clearTimeout(servicesMouseOutTimerRef.current);
+                  servicesMouseOutTimerRef.current = null;
+                }
+                setServicesOpen(true);
+              }}
+              onMouseLeave={() => {
+                servicesMouseOutTimerRef.current = setTimeout(() => {
+                  setServicesOpen(false);
+                }, mouseOutDelay);
+              }}
             >
-              {tc('home', 'Home')}
-            </Link>
-          </li>
-          <li
-            className="relative"
-            onMouseEnter={() => {
-              if (servicesMouseOutTimerRef.current) {
-                clearTimeout(servicesMouseOutTimerRef.current);
-                servicesMouseOutTimerRef.current = null;
-              }
-              setServicesOpen(true);
-            }}
-            onMouseLeave={() => {
-              servicesMouseOutTimerRef.current = setTimeout(() => {
-                setServicesOpen(false);
-              }, mouseOutDelay);
-            }}
-          >
-            <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
-              {t('services', 'Services')}{' '}
-              <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
-            </button>
+              <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
+                {t('services', 'Services')}{' '}
+                <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+              </button>
 
-            {servicesOpen && (
-              <div className="absolute left-0 top-full mt-1 min-w-[220px] bg-white shadow-lg border border-gray-200 rounded-md py-2">
-                {serviceLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    prefetch={false}
-                    href={item.href}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:text-[#f7941e] hover:bg-gray-50"
-                    {...intentPrefetchProps(item.href)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </li>
-          <li
-            className="relative"
-            onMouseEnter={() => {
-              if (mouseOutTimerRef.current) {
-                clearTimeout(mouseOutTimerRef.current);
-                mouseOutTimerRef.current = null;
-              }
-              setMegaOpen(true);
-            }}
-            onMouseLeave={() => {
-              mouseOutTimerRef.current = setTimeout(() => {
-                setMegaOpen(false);
-              }, mouseOutDelay);
-            }}
-          >
-            <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
-              {t('tours', 'Tours')} <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
-            </button>
-            {/* Mega Menu */}
-            {megaOpen && (
-              <div className="fixed left-0 right-0 top-16 z-100 flex justify-center pointer-events-auto">
-                <div className="w-full max-w-7xl bg-white shadow-2xl border border-gray-200 rounded-xl flex p-8" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
-                  {/* By Tour Type */}
-                  <div className="flex-1 px-4">
-                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('tourTypes', 'By Tour Type')}</h4>
-                    <ul className="space-y-1">
-                      {tourTypeLinks.map((link) => (
-                        <li key={link.slug}>
+              {servicesOpen && (
+                <div className="absolute left-0 top-full mt-1 min-w-[220px] bg-white shadow-lg border border-gray-200 rounded-md py-2">
+                  {serviceLinks.map((item) => (
+                    <Link
+                      key={item.href}
+                      prefetch={false}
+                      href={item.href}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:text-[#f7941e] hover:bg-gray-50"
+                      {...intentPrefetchProps(item.href)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </li>
+            <li
+              className="relative"
+              onMouseEnter={() => {
+                if (mouseOutTimerRef.current) {
+                  clearTimeout(mouseOutTimerRef.current);
+                  mouseOutTimerRef.current = null;
+                }
+                setMegaOpen(true);
+              }}
+              onMouseLeave={() => {
+                mouseOutTimerRef.current = setTimeout(() => {
+                  setMegaOpen(false);
+                }, mouseOutDelay);
+              }}
+            >
+              <button className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium flex items-center">
+                {t('tours', 'Tours')} <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
+              </button>
+              {/* Mega Menu */}
+              <div
+                className={`fixed left-0 right-0 top-16 z-[100] flex justify-center pointer-events-auto transition-all duration-300 ease-out ${megaOpen
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 -translate-y-2 pointer-events-none'
+                  }`}
+              >
+                <div className="w-full max-w-6xl mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}>
+                  {/* Header Banner */}
+                  <div className="bg-gradient-to-r from-[#f7941e] to-[#ff6b35] px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-white text-2xl">explore</span>
+                        <h3 className="text-white font-bold text-lg">Discover Your Next Adventure</h3>
+                      </div>
+                      <Link
+                        prefetch={false}
+                        href={localePrefix + '/tours'}
+                        onClick={handleMegamenuLinkClick}
+                        className="bg-white text-[#f7941e] px-5 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors flex items-center gap-2"
+                        {...intentPrefetchProps(localePrefix + '/tours')}
+                      >
+                        <span>Browse All Tours</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="p-8">
+                    <div className="grid grid-cols-12 gap-8">
+                      {/* By Tour Type - Left Column */}
+                      <div className="col-span-3">
+                        <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#f7941e] text-lg">category</span>
+                          {t('tourTypes', 'Tour Types')}
+                        </h4>
+                        <ul className="space-y-1">
+                          {tourTypeLinks.map((link) => (
+                            <li key={link.slug}>
+                              <Link
+                                prefetch={false}
+                                href={localePrefix + `/tours/${link.type}/${link.slug}`}
+                                onClick={handleMegamenuLinkClick}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-[#f7941e]/10 hover:text-[#f7941e] transition-all group"
+                                {...intentPrefetchProps(localePrefix + `/tours/${link.type}/${link.slug}`)}
+                              >
+                                <span className="material-symbols-outlined text-lg text-gray-400 group-hover:text-[#f7941e] transition-colors">
+                                  {link.slug === 'attraction-tickets' ? 'confirmation_number' : link.slug === 'land-tours' ? 'hiking' : 'sailing'}
+                                </span>
+                                <span className="font-medium">{link.label}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Quick Links */}
+                        <div className="mt-6 pt-6 border-t border-gray-100">
                           <Link
                             prefetch={false}
-                            href={localePrefix + `/tours/${link.type}/${link.slug}`}
+                            href={localePrefix + '/tours/featured'}
                             onClick={handleMegamenuLinkClick}
-                            className="hover:text-[#f7941e]"
-                            {...intentPrefetchProps(localePrefix + `/tours/${link.type}/${link.slug}`)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all"
+                            {...intentPrefetchProps(localePrefix + '/tours/featured')}
                           >
-                            {link.label}
+                            <span className="material-symbols-outlined text-lg">star</span>
+                            <span className="font-semibold">{t('featuredTours', 'Featured Tours')}</span>
                           </Link>
-                        </li>
-                      ))}
-                      <li className="pt-2">
-                        <Link
-                          prefetch={false}
-                          href={localePrefix + '/tours/duration'}
-                          className="font-bold text-[#f7941e]"
-                          {...intentPrefetchProps(localePrefix + '/tours/duration')}
-                        >
-                          {t('byDuration', 'By Duration')}
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          prefetch={false}
-                          href={localePrefix + '/tours/search'}
-                          className="font-bold text-[#f7941e]"
-                          {...intentPrefetchProps(localePrefix + '/tours/search')}
-                        >
-                          {t('searchAllTours', 'Search All Tours')}
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          prefetch={false}
-                          href={localePrefix + '/tours/featured'}
-                          className="font-bold"
-                          {...intentPrefetchProps(localePrefix + '/tours/featured')}
-                        >
-                          {t('featuredTours', 'Featured Tours')}
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-                  {/* By Destination - Dynamic Grid */}
-                  <div className="flex-2 px-4">
-                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('destinations', 'By Destination')}</h4>
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                      {destinationTree.map((dest) => (
-                        <div key={dest.id} className="break-inside-avoid mb-2">
-                          {dest.children.length > 0 ? (
-                            <>
+                        </div>
+                      </div>
+
+                      {/* By Destination - Center (Largest) */}
+                      <div className="col-span-6 border-x border-gray-100 px-8">
+                        <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#f7941e] text-lg">public</span>
+                          {t('destinations', 'Popular Destinations')}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                          {destinationTree.map((dest) => (
+                            <div key={dest.id} className="group">
                               <Link
                                 prefetch={false}
                                 href={`${localePrefix}/tours/destination/${dest.slug}`}
                                 onClick={handleMegamenuLinkClick}
-                                className="font-bold text-gray-800 hover:text-[#f7941e] mb-1 flex items-center"
+                                className="flex items-center gap-2 font-semibold text-gray-800 hover:text-[#f7941e] transition-colors py-1"
                                 {...intentPrefetchProps(`${localePrefix}/tours/destination/${dest.slug}`)}
                               >
+                                <span className="w-6 h-6 rounded-full bg-[#f7941e]/10 flex items-center justify-center text-xs font-bold text-[#f7941e] group-hover:bg-[#f7941e] group-hover:text-white transition-colors">
+                                  {dest.name.charAt(0)}
+                                </span>
                                 {decodeHtmlEntities(dest.name)}
-                                <span className="material-symbols-outlined ml-1 text-[16px]">chevron_right</span>
+                                {dest.children.length > 0 && (
+                                  <span className="material-symbols-outlined text-[14px] text-gray-400">chevron_right</span>
+                                )}
                               </Link>
-                              <ul className="space-y-1 pl-3 border-l-2 border-gray-100">
-                                {dest.children.map((child) => (
-                                  <li key={child.id}>
-                                    <Link
-                                      prefetch={false}
-                                      href={`${localePrefix}/tours/destination/${child.slug}`}
-                                      onClick={handleMegamenuLinkClick}
-                                      className="text-sm text-gray-600 hover:text-[#f7941e] block py-0.5"
-                                      {...intentPrefetchProps(`${localePrefix}/tours/destination/${child.slug}`)}
-                                    >
-                                      {decodeHtmlEntities(child.name)}
-                                    </Link>
-                                    {/* Third Level (Cities/Regions) */}
-                                    {child.children && child.children.length > 0 && (
-                                      <ul className="pl-3 mt-0.5 space-y-0.5 border-l border-gray-200 ml-1">
-                                          {child.children.map((grandchild) => (
-                                          <li key={grandchild.id}>
-                                            <Link
-                                              prefetch={false}
-                                              href={`${localePrefix}/tours/destination/${grandchild.slug}`}
-                                              onClick={handleMegamenuLinkClick}
-                                              className="text-xs text-gray-500 hover:text-[#f7941e] block py-0.5"
-                                              {...intentPrefetchProps(`${localePrefix}/tours/destination/${grandchild.slug}`)}
-                                            >
-                                              {decodeHtmlEntities(grandchild.name)}
-                                            </Link>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            </>
-                          ) : (
-                            <Link
-                              prefetch={false}
-                              href={`${localePrefix}/tours/destination/${dest.slug}`}
-                              onClick={handleMegamenuLinkClick}
-                              className="font-medium text-gray-700 hover:text-[#f7941e] block py-1"
-                              {...intentPrefetchProps(`${localePrefix}/tours/destination/${dest.slug}`)}
-                            >
-                              {decodeHtmlEntities(dest.name)}
-                            </Link>
-                          )}
+                              {dest.children.length > 0 && (
+                                <ul className="ml-8 mt-1 space-y-0.5">
+                                  {dest.children.slice(0, 4).map((child) => (
+                                    <li key={child.id}>
+                                      <Link
+                                        prefetch={false}
+                                        href={`${localePrefix}/tours/destination/${child.slug}`}
+                                        onClick={handleMegamenuLinkClick}
+                                        className="text-sm text-gray-500 hover:text-[#f7941e] transition-colors block py-0.5"
+                                        {...intentPrefetchProps(`${localePrefix}/tours/destination/${child.slug}`)}
+                                      >
+                                        {decodeHtmlEntities(child.name)}
+                                      </Link>
+                                    </li>
+                                  ))}
+                                  {dest.children.length > 4 && (
+                                    <li>
+                                      <Link
+                                        prefetch={false}
+                                        href={`${localePrefix}/tours/destination/${dest.slug}`}
+                                        onClick={handleMegamenuLinkClick}
+                                        className="text-xs text-[#f7941e] font-medium hover:underline py-0.5"
+                                        {...intentPrefetchProps(`${localePrefix}/tours/destination/${dest.slug}`)}
+                                      >
+                                        +{dest.children.length - 4} more
+                                      </Link>
+                                    </li>
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* By Experience - Right Column */}
+                      <div className="col-span-3">
+                        <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#f7941e] text-lg">interests</span>
+                          {t('experiences', 'Experiences')}
+                        </h4>
+                        <ul className="space-y-1">
+                          {activityTree.slice(0, 8).map((activity) => (
+                            <li key={activity.id}>
+                              <Link
+                                prefetch={false}
+                                href={localePrefix + `/tours/activity/${activity.slug}`}
+                                onClick={handleMegamenuLinkClick}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-[#f7941e] transition-all text-sm"
+                                {...intentPrefetchProps(localePrefix + `/tours/activity/${activity.slug}`)}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#f7941e]/50"></span>
+                                {decodeHtmlEntities(activity.name)}
+                              </Link>
+                            </li>
+                          ))}
+                          {activityTree.length > 8 && (
+                            <li className="pt-2">
+                              <Link
+                                prefetch={false}
+                                href={localePrefix + '/tours'}
+                                onClick={handleMegamenuLinkClick}
+                                className="text-[#f7941e] font-medium text-sm hover:underline px-3"
+                                {...intentPrefetchProps(localePrefix + '/tours')}
+                              >
+                                View all experiences →
+                              </Link>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
                     </div>
-                  </div>
-                  {/* By Experience */}
-                  <div className="flex-1 px-4">
-                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('experiences', 'By Experience')}</h4>
-                    <ul className="space-y-1">
-                      {activityTree.map((activity) => (
-                        <li key={activity.id}>
-                          <Link
-                            prefetch={false}
-                            href={localePrefix + `/tours/activity/${activity.slug}`}
-                            onClick={handleMegamenuLinkClick}
-                            className="hover:text-[#f7941e]"
-                            {...intentPrefetchProps(localePrefix + `/tours/activity/${activity.slug}`)}
-                          >
-                            {decodeHtmlEntities(activity.name)}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {/* By Duration */}
-                  <div className="flex-1 px-4">
-                    <h4 className="font-semibold text-gray-900 border-b-2 pb-2 mb-3" style={{ borderColor: brandOrange }}>{t('byDuration', 'By Duration')}</h4>
-                    <ul className="space-y-1">
-                      {durationLinks.map((link) => (
-                        <li key={link.slug}>
-                          <Link
-                            prefetch={false}
-                            href={localePrefix + `/tours/duration/${link.slug}`}
-                            onClick={handleMegamenuLinkClick}
-                            className="hover:text-[#f7941e]"
-                            {...intentPrefetchProps(localePrefix + `/tours/duration/${link.slug}`)}
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </div>
               </div>
-            )}
-          </li>
-          <li>
-            <Link
-              prefetch={false}
-              href={localePrefix + '/about-us'}
-              className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
-              {...intentPrefetchProps(localePrefix + '/about-us')}
-            >
-              {t('aboutUs', 'About')}
-            </Link>
-          </li>
-          <li>
-            <Link
-              prefetch={false}
-              href={localePrefix + '/contact'}
-              className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
-              {...intentPrefetchProps(localePrefix + '/contact')}
-            >
-              {t('contactUs', 'Contact')}
-            </Link>
-          </li>
-          <li>
-            <Link
-              prefetch={false}
-              href={localePrefix + '/faq'}
-              className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
-              {...intentPrefetchProps(localePrefix + '/faq')}
-            >
-              {t('faq', 'FAQ')}
-            </Link>
-          </li>
-        </ul>
-        {/* Language Switcher */}
-        <div className="hidden md:block ml-4">
-          <LanguageSwitcher currentLocale={lang} />
-        </div>
-        {/* Mobile Hamburger */}
-        <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
-          <span className="sr-only">Open menu</span>
-          <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
+            </li>
+            <li>
+              <Link
+                prefetch={false}
+                href={localePrefix + '/about-us'}
+                className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
+                {...intentPrefetchProps(localePrefix + '/about-us')}
+              >
+                {t('aboutUs', 'About')}
+              </Link>
+            </li>
+            <li>
+              <Link
+                prefetch={false}
+                href={localePrefix + '/contact'}
+                className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
+                {...intentPrefetchProps(localePrefix + '/contact')}
+              >
+                {t('contactUs', 'Contact')}
+              </Link>
+            </li>
+            <li>
+              <Link
+                prefetch={false}
+                href={localePrefix + '/faq'}
+                className="px-4 py-2 text-gray-700 hover:text-[#f7941e] font-medium"
+                {...intentPrefetchProps(localePrefix + '/faq')}
+              >
+                {t('faq', 'FAQ')}
+              </Link>
+            </li>
+          </ul>
+          {/* Language Switcher */}
+          <div className="hidden md:block ml-4">
+            <LanguageSwitcher currentLocale={lang} />
+          </div>
+          {/* Mobile Hamburger */}
+          <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
+            <span className="sr-only">Open menu</span>
+            <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
         </div>
       </div>
       {/* Mobile Menu */}
@@ -498,9 +506,8 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
                           </Link>
                         </li>
                       ))}
-                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours/duration'} className="font-bold text-[#f7941e]">{t('byDuration', 'By Duration')}</Link></li>
-                      <li><Link prefetch={false} href={localePrefix + '/tours/search'} className="font-bold text-[#f7941e]">{t('searchAllTours', 'Search All Tours')}</Link></li>
-                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold">{t('featuredTours', 'Featured Tours')}</Link></li>
+                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours'} className="font-bold text-[#f7941e]" onClick={() => setMobileOpen(false)}>{t('searchAllTours', 'Search All Tours')}</Link></li>
+                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold" onClick={() => setMobileOpen(false)}>{t('featuredTours', 'Featured Tours')}</Link></li>
                     </ul>
                   </div>
                   <div className="mb-2">
@@ -541,18 +548,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
                       ))}
                     </ul>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('byDuration', 'By Duration')}</span>
-                    <ul className="ml-2">
-                      {durationLinks.map((link) => (
-                        <li key={link.slug}>
-                          <Link prefetch={false} href={localePrefix + `/tours/duration/${link.slug}`} onClick={() => setMobileOpen(false)}>
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+
                 </div>
               )}
             </li>

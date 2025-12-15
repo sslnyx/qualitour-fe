@@ -43,14 +43,36 @@ function getTourPrice(tour: WPTour): number | null {
     return match ? parseInt(match[0], 10) : null;
 }
 
-// Get duration in days from tour meta
+// Get duration in days from tour meta, title, or taxonomy
 function getTourDuration(tour: WPTour): number | null {
-    const meta = tour.tour_meta;
-    if (!meta) return null;
+    // 1. Try tour_meta.duration_text (e.g., "4 Days / 3 Nights" or "8 Days")
+    const durationText = tour.tour_meta?.duration_text;
+    if (durationText) {
+        const match = String(durationText).match(/(\d+)\s*Days?/i);
+        if (match) return parseInt(match[1], 10);
+    }
 
-    const durationStr = meta.duration || meta.duration_text || '';
-    const match = String(durationStr).match(/(\d+)/);
-    return match ? parseInt(match[0], 10) : null;
+    // 2. Try to extract from title (e.g., "Yellowknife Winter Aurora 4 Days")
+    const titleMatch = tour.title.rendered.match(/(\d+)\s*Days?/i);
+    if (titleMatch) return parseInt(titleMatch[1], 10);
+
+    // 3. Try tour_terms.durations taxonomy (e.g., [{name: "4-6 Days", slug: "4-6-days"}])
+    const durations = tour.tour_terms?.durations;
+    if (durations && durations.length > 0) {
+        const durationName = durations[0].name;
+        // Parse "4-6 Days" -> take the first number
+        const termMatch = String(durationName).match(/(\d+)/);
+        if (termMatch) return parseInt(termMatch[1], 10);
+    }
+
+    // 4. Try raw duration meta field
+    const rawDuration = tour.tour_meta?.duration;
+    if (rawDuration) {
+        const match = String(rawDuration).match(/(\d+)/);
+        if (match) return parseInt(match[1], 10);
+    }
+
+    return null;
 }
 
 export function TourFilterSidebar({
@@ -485,18 +507,21 @@ export function TourFilterSidebar({
                 </button>
                 {openSections.has('duration') && (
                     <div className="mt-4 px-2">
-                        <div className="flex justify-between text-sm text-gray-600 mb-2">
-                            <span>{durationRange[0]} {durationRange[0] === 1 ? 'day' : 'days'}</span>
-                            <span>{durationRange[1]} days</span>
+                        <div className="flex justify-between text-sm text-gray-600 mb-3">
+                            <span className="font-medium">Up to {durationRange[1]} {durationRange[1] === 1 ? 'day' : 'days'}</span>
                         </div>
                         <input
                             type="range"
                             min={minDuration}
                             max={maxDuration}
                             value={durationRange[1]}
-                            onChange={(e) => setDurationRange([durationRange[0], parseInt(e.target.value)])}
+                            onChange={(e) => setDurationRange([minDuration, parseInt(e.target.value)])}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#f7941e]"
                         />
+                        <div className="flex justify-between text-xs text-gray-400 mt-1">
+                            <span>{minDuration} {minDuration === 1 ? 'day' : 'days'}</span>
+                            <span>{maxDuration} days</span>
+                        </div>
                     </div>
                 )}
             </div>
