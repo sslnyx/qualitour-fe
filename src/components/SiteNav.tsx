@@ -181,7 +181,7 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
               alt="Qualitour"
               width={175}
               height={48}
-              className="w-[175px] h-auto"
+              className="w-[175px] h-auto -ml-4"
               style={{ width: 'auto', height: 'auto' }}
             />
           </Link>
@@ -254,8 +254,8 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
               {/* Mega Menu */}
               <div
                 className={`fixed left-0 right-0 top-16 z-[100] flex justify-center pointer-events-auto transition-all duration-300 ease-out ${megaOpen
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 -translate-y-2 pointer-events-none'
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 -translate-y-2 pointer-events-none'
                   }`}
               >
                 <div className="w-full max-w-6xl mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}>
@@ -457,108 +457,244 @@ export default function SiteNav({ lang, activities = [], destinations = [], dura
             <LanguageSwitcher currentLocale={lang} />
           </div>
           {/* Mobile Hamburger */}
-          <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
+          <button className="md:hidden p-2 -mr-3" onClick={() => setMobileOpen(!mobileOpen)}>
             <span className="sr-only">Open menu</span>
             <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
         </div>
       </div>
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 px-4 py-2">
-          <ul className="space-y-2">
-            <li><Link prefetch={false} href={localePrefix + '/'} className="block py-2 text-gray-700 font-medium">{tc('home', 'Home')}</Link></li>
-            <li>
-              <button
-                className="block w-full text-left py-2 text-gray-700 font-medium"
-                onClick={() => setServicesMobileOpen(!servicesMobileOpen)}
+      {/* Mobile Menu - Premium Slide-in Drawer */}
+      <div
+        className={`fixed inset-0 z-[200] md:hidden transition-all duration-300 ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'
+          }`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0'
+            }`}
+          onClick={() => setMobileOpen(false)}
+        />
+
+        {/* Drawer */}
+        <div
+          className={`absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${mobileOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <Image
+              src={QualitourLogo}
+              alt="Qualitour"
+              width={140}
+              height={38}
+              className="h-9 w-auto -ml-3"
+            />
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-3"
+            >
+              <span className="material-symbols-outlined text-gray-600">close</span>
+            </button>
+          </div>
+
+          {/* Menu Content */}
+          <div className="flex-1 overflow-y-auto">
+            <nav className="py-4">
+              {/* Home */}
+              <Link
+                prefetch={false}
+                href={localePrefix + '/'}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors"
               >
-                {t('services', 'Services')}{' '}
-                <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
-              </button>
-              {servicesMobileOpen && (
-                <div className="bg-gray-50 border rounded mt-2 p-2">
-                  <ul className="ml-2">
+                <span className="material-symbols-outlined text-[#f7941e]">home</span>
+                {tc('home', 'Home')}
+              </Link>
+
+              {/* Services Accordion */}
+              <div className="border-t border-gray-100">
+                <button
+                  onClick={() => setServicesMobileOpen(!servicesMobileOpen)}
+                  className="flex items-center justify-between w-full px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[#f7941e]">support_agent</span>
+                    {t('services', 'Services')}
+                  </div>
+                  <span className={`material-symbols-outlined text-gray-400 transition-transform duration-200 ${servicesMobileOpen ? 'rotate-180' : ''}`}>
+                    expand_more
+                  </span>
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ${servicesMobileOpen ? 'max-h-40' : 'max-h-0'}`}>
+                  <div className="bg-gray-50 py-2">
                     {serviceLinks.map((item) => (
-                      <li key={item.href}>
-                        <Link prefetch={false} href={item.href} onClick={() => setMobileOpen(false)}>
-                          {item.label}
-                        </Link>
-                      </li>
+                      <Link
+                        key={item.href}
+                        prefetch={false}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-8 py-2.5 text-gray-600 hover:text-[#f7941e] transition-colors"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#f7941e]/50"></span>
+                        {item.label}
+                      </Link>
                     ))}
-                  </ul>
+                  </div>
                 </div>
-              )}
-            </li>
-            <li>
-              <button className="block w-full text-left py-2 text-gray-700 font-medium" onClick={() => setMegaOpen(!megaOpen)}>
-                {t('tours', 'Tours')} <span className="material-symbols-outlined ml-1 text-[18px]">expand_more</span>
-              </button>
-              {megaOpen && (
-                <div className="bg-gray-50 border rounded mt-2 p-2">
-                  <div className="mb-2">
-                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('tourTypes', 'By Tour Type')}</span>
-                    <ul className="ml-2">
-                      {tourTypeLinks.map((link) => (
-                        <li key={link.slug}>
-                          <Link prefetch={false} href={localePrefix + `/tours/${link.type}/${link.slug}`} onClick={() => setMobileOpen(false)}>
+              </div>
+
+              {/* Tours Accordion */}
+              <div className="border-t border-gray-100">
+                <button
+                  onClick={() => setMegaOpen(!megaOpen)}
+                  className="flex items-center justify-between w-full px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[#f7941e]">explore</span>
+                    {t('tours', 'Tours')}
+                  </div>
+                  <span className={`material-symbols-outlined text-gray-400 transition-transform duration-200 ${megaOpen ? 'rotate-180' : ''}`}>
+                    expand_more
+                  </span>
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ${megaOpen ? 'max-h-[2000px]' : 'max-h-0'}`}>
+                  <div className="bg-gray-50">
+                    {/* Browse All Tours CTA */}
+                    <div className="px-5 py-4 bg-gradient-to-r from-[#f7941e] to-[#ff6b35]">
+                      <Link
+                        prefetch={false}
+                        href={localePrefix + '/tours'}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center justify-center gap-2 bg-white text-[#f7941e] px-4 py-2.5 rounded-full font-semibold text-sm"
+                      >
+                        <span>Browse All Tours</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      </Link>
+                    </div>
+
+                    {/* Tour Types */}
+                    <div className="px-5 py-4 border-b border-gray-200">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">category</span>
+                        {t('tourTypes', 'Tour Types')}
+                      </h4>
+                      <div className="space-y-1">
+                        {tourTypeLinks.map((link) => (
+                          <Link
+                            key={link.slug}
+                            prefetch={false}
+                            href={localePrefix + `/tours/${link.type}/${link.slug}`}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-3 py-2 text-gray-700 hover:text-[#f7941e] transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-lg text-gray-400">
+                              {link.slug === 'attraction-tickets' ? 'confirmation_number' : link.slug === 'land-tours' ? 'hiking' : 'sailing'}
+                            </span>
                             {link.label}
                           </Link>
-                        </li>
-                      ))}
-                      <li className="pt-2"><Link prefetch={false} href={localePrefix + '/tours'} className="font-bold text-[#f7941e]" onClick={() => setMobileOpen(false)}>{t('searchAllTours', 'Search All Tours')}</Link></li>
-                      <li><Link prefetch={false} href={localePrefix + '/tours/featured'} className="font-bold" onClick={() => setMobileOpen(false)}>{t('featuredTours', 'Featured Tours')}</Link></li>
-                    </ul>
-                  </div>
-                  <div className="mb-2">
-                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('destinations', 'By Destination')}</span>
-                    <ul className="ml-2">
-                      {destinationTree.map((dest) => (
-                        <li key={dest.id}>
-                          <Link prefetch={false} href={`${localePrefix}/tours/destination/${dest.slug}`}>{decodeHtmlEntities(dest.name)}</Link>
-                          {dest.children.length > 0 && (
-                            <ul className="ml-2 border-l pl-2">
-                              {dest.children.map((child) => (
-                                <li key={child.id}>
-                                  <Link prefetch={false} href={`${localePrefix}/tours/destination/${child.slug}`}>{decodeHtmlEntities(child.name)}</Link>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mb-2">
-                    <span className="font-semibold text-gray-900" style={{ color: brandOrange }}>{t('experiences', 'By Experience')}</span>
-                    <ul className="ml-2">
-                      {activityTree.map((activity) => (
-                        <li key={activity.id}>
-                          <Link prefetch={false} href={`${localePrefix}/tours/activity/${activity.slug}`} onClick={() => setMobileOpen(false)}>{activity.name}</Link>
-                          {activity.children && activity.children.length > 0 && (
-                            <ul className="ml-2 border-l pl-2">
-                              {activity.children.map((child) => (
-                                <li key={child.id}>
-                                  <Link prefetch={false} href={`${localePrefix}/tours/activity/${child.slug}`} onClick={() => setMobileOpen(false)}>{child.name}</Link>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                        ))}
+                        <Link
+                          prefetch={false}
+                          href={localePrefix + '/tours/featured'}
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center gap-3 py-2 text-amber-600 font-medium"
+                        >
+                          <span className="material-symbols-outlined text-lg">star</span>
+                          {t('featuredTours', 'Featured Tours')}
+                        </Link>
+                      </div>
+                    </div>
 
+                    {/* Destinations */}
+                    <div className="px-5 py-4 border-b border-gray-200">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">public</span>
+                        {t('destinations', 'Destinations')}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {destinationTree.map((dest) => (
+                          <Link
+                            key={dest.id}
+                            prefetch={false}
+                            href={`${localePrefix}/tours/destination/${dest.slug}`}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-2 py-2 text-gray-700 hover:text-[#f7941e] transition-colors"
+                          >
+                            <span className="w-5 h-5 rounded-full bg-[#f7941e]/10 flex items-center justify-center text-[10px] font-bold text-[#f7941e]">
+                              {dest.name.charAt(0)}
+                            </span>
+                            <span className="text-sm">{decodeHtmlEntities(dest.name)}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Experiences */}
+                    <div className="px-5 py-4">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">interests</span>
+                        {t('experiences', 'Experiences')}
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {activityTree.slice(0, 6).map((activity) => (
+                          <Link
+                            key={activity.id}
+                            prefetch={false}
+                            href={`${localePrefix}/tours/activity/${activity.slug}`}
+                            onClick={() => setMobileOpen(false)}
+                            className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-[#f7941e] hover:text-[#f7941e] transition-colors"
+                          >
+                            {decodeHtmlEntities(activity.name)}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </li>
-            <li><Link prefetch={false} href={localePrefix + '/about-us'} className="block py-2 text-gray-700 font-medium">About</Link></li>
-            <li><Link prefetch={false} href={localePrefix + '/contact'} className="block py-2 text-gray-700 font-medium">Contact</Link></li>
-            <li><Link prefetch={false} href={localePrefix + '/faq'} className="block py-2 text-gray-700 font-medium">FAQ</Link></li>
-            <li><Link href="#" className="block py-2 text-gray-700 font-medium border border-gray-300 rounded mt-2" style={{ borderColor: brandOrange }}>EN / ZH</Link></li>
-          </ul>
+              </div>
+
+              {/* Other Links */}
+              <Link
+                prefetch={false}
+                href={localePrefix + '/about-us'}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors border-t border-gray-100"
+              >
+                <span className="material-symbols-outlined text-[#f7941e]">info</span>
+                {t('aboutUs', 'About Us')}
+              </Link>
+
+              <Link
+                prefetch={false}
+                href={localePrefix + '/contact'}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors border-t border-gray-100"
+              >
+                <span className="material-symbols-outlined text-[#f7941e]">mail</span>
+                {t('contactUs', 'Contact Us')}
+              </Link>
+
+              <Link
+                prefetch={false}
+                href={localePrefix + '/faq'}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-5 py-3.5 text-gray-800 font-medium hover:bg-gray-50 transition-colors border-t border-gray-100"
+              >
+                <span className="material-symbols-outlined text-[#f7941e]">help</span>
+                {t('faq', 'FAQ')}
+              </Link>
+            </nav>
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Language</span>
+              <LanguageSwitcher currentLocale={lang} />
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 }
