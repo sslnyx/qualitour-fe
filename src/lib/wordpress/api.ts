@@ -1357,7 +1357,7 @@ export async function getTourTags(params: WPApiParams = {}): Promise<WPTourTag[]
  * Get a single tour tag by slug
  */
 export async function getTourTagBySlug(slug: string): Promise<WPTourTag | null> {
-  const { terms } = await fetchTermsV1('tour_tag', { slug, per_page: 1 } as Record<string, any>);
+  const { terms } = await fetchTermsV1('tour-tag', { slug, per_page: 1 } as Record<string, any>);
   return terms[0] ? mapV1TermToTourTag(terms[0]) : null;
 }
 
