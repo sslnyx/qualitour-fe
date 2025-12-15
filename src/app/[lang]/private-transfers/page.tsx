@@ -7,6 +7,7 @@ import { getLocalePrefix } from '@/i18n/config';
 import TransferBookingModalButton from '@/components/TransferBookingModalButton';
 import FeaturedGoogleReview from '@/components/FeaturedGoogleReview';
 import { wpUrl } from '@/lib/wp-url';
+import PageHero from '@/components/PageHero';
 
 type TransferOffer = {
   titleLines: string[];
@@ -231,56 +232,30 @@ export default async function PrivateTransfersPage({
   return (
     <main className="flex-grow">
       {/* Premium Hero Section */}
-      <section className="relative min-h-[70vh] flex items-center overflow-hidden">
-        {/* Background with gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-          <div className="absolute inset-0 opacity-20 bg-[url('/ski-shuttle.jpg')] bg-cover bg-center" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+      {/* Premium Hero Section */}
+      <PageHero
+        image="/ski-shuttle.jpg"
+        title={t.heading}
+        subtitle={t.subheading}
+        badge={{ icon: 'airport_shuttle', text: t.heroTagline }}
+      >
+        <div className="flex flex-wrap justify-center gap-4 mt-10">
+          <a
+            href="#routes"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] text-white font-bold rounded-full hover:shadow-2xl hover:shadow-orange-500/30 hover:scale-105 transition-all duration-300"
+          >
+            <span className="material-icons">route</span>
+            {t.popularRoutes}
+          </a>
+          <Link
+            href={`${localePrefix}/contact`}
+            className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
+          >
+            <span className="material-icons">mail</span>
+            {t.getInTouch}
+          </Link>
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-20 w-96 h-96 bg-[#f7941e]/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
-
-        <Container className="relative z-10 py-20">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#f7941e]/20 backdrop-blur-sm rounded-full text-[#f7941e] text-sm font-bold tracking-widest mb-6">
-              <span className="material-icons text-lg">airport_shuttle</span>
-              {t.heroTagline}
-            </span>
-
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              {t.heading}
-            </h1>
-
-            <p className="text-xl md:text-2xl text-white/80 mb-10 leading-relaxed">
-              {t.subheading}
-            </p>
-
-            <div className="flex flex-wrap gap-4">
-              <a
-                href="#routes"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#f7941e] to-[#ff6b35] text-white font-bold rounded-full hover:shadow-2xl hover:shadow-orange-500/30 hover:scale-105 transition-all duration-300"
-              >
-                <span className="material-icons">route</span>
-                {t.popularRoutes}
-              </a>
-              <Link
-                href={`${localePrefix}/contact`}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
-              >
-                <span className="material-icons">mail</span>
-                {t.getInTouch}
-              </Link>
-            </div>
-          </div>
-        </Container>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 animate-bounce">
-          <span className="material-icons text-3xl">keyboard_arrow_down</span>
-        </div>
-      </section>
+      </PageHero>
 
       {/* Why Choose Us */}
       <section className="py-20 bg-white relative overflow-hidden">

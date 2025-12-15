@@ -5,7 +5,7 @@ import Image from 'next/image';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import TourReviews from '@/components/TourReviews';
-import guideTourImg from '../../../../public/guide-tour.jpg';
+import PageHero from '@/components/PageHero';
 import miniTourImg from '../../../../public/mini-tour.jpg';
 import skiShuttleImg from '../../../../public/ski-shuttle.jpg';
 
@@ -33,25 +33,12 @@ export default async function AboutPage({
   return (
     <main className="flex-grow">
       {/* Premium Hero Section */}
-      <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
-        <Image
-          src={guideTourImg}
-          alt="Beautiful landscape in Western Canada"
-          fill
-          className="object-cover"
-          priority
-          placeholder="blur"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
-        <Container className="relative z-10 text-center text-white">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight drop-shadow-lg">
-            {t.title}
-          </h1>
-          <p className="text-xl md:text-2xl font-light text-gray-100 max-w-3xl mx-auto drop-shadow-md">
-            {t.subtitle}
-          </p>
-        </Container>
-      </section>
+      <PageHero
+        image="/about-hero.png"
+        title={t.title}
+        subtitle={t.subtitle}
+        badge={{ icon: 'groups', text: 'About Us' }}
+      />
 
       {/* Mission Statement */}
       <section className="py-20 bg-white">
@@ -169,7 +156,7 @@ export default async function AboutPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Service 1 */}
             <Link href={`${localePrefix}/tours`} className="group relative h-96 rounded-2xl overflow-hidden block">
-              <Image src={guideTourImg} alt="Guided Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <Image src="/guide-tour.jpg" alt="Guided Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <span className="material-icons text-[#f7941e] text-4xl mb-4">tour</span>
@@ -183,7 +170,7 @@ export default async function AboutPage({
 
             {/* Service 2 */}
             <Link href={`${localePrefix}/tours`} className="group relative h-96 rounded-2xl overflow-hidden block">
-              <Image src={miniTourImg} alt="Mini Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <Image src="/mini-tour.jpg" alt="Mini Tours" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <span className="material-icons text-[#f7941e] text-4xl mb-4">groups</span>
@@ -197,7 +184,7 @@ export default async function AboutPage({
 
             {/* Service 3 */}
             <Link href={`${localePrefix}/private-transfers`} className="group relative h-96 rounded-2xl overflow-hidden block">
-              <Image src={skiShuttleImg} alt="Private Transfers" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+              <Image src="/ski-shuttle.jpg" alt="Private Transfers" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <span className="material-icons text-[#f7941e] text-4xl mb-4">directions_car</span>

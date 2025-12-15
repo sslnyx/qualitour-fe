@@ -3,6 +3,7 @@ import Container from '@/components/ui/Container';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import { ContactForm } from '@/components/forms';
+import PageHero from '@/components/PageHero';
 
 export const metadata: Metadata = {
   title: 'Contact Us | Qualitour',
@@ -27,23 +28,12 @@ export default async function ContactPage({
   return (
     <main className="flex-grow bg-gray-50">
       {/* Premium Hero Section */}
-      <section className="bg-white py-20 md:py-28 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]"></div>
-        <div className="absolute top-0 left-0 w-64 h-64 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-
-        <Container className="relative z-10 text-center">
-          <span className="text-[#f7941e] font-bold tracking-widest uppercase text-sm mb-4 block">
-            Contact Us
-          </span>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-            {t.title}
-          </h1>
-          <p className="text-xl text-gray-500 max-w-2xl mx-auto font-light">
-            {t.subtitle}
-          </p>
-        </Container>
-      </section>
+      <PageHero
+        image="/contact-hero.png"
+        title={t.title}
+        subtitle={t.subtitle}
+        badge={{ icon: 'contact_support', text: 'Contact Us' }}
+      />
 
       {/* Split Content Section */}
       <section className="py-12 md:py-20 relative z-10 -mt-10">

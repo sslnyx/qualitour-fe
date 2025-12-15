@@ -3,12 +3,12 @@ import Container from '@/components/ui/Container';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
+import PageHero from '@/components/PageHero';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Qualitour',
   description: 'Qualitour Privacy Policy - Learn how we collect, use, and protect your personal information.',
 };
-
 // Policy sections with Material Icons
 const policySections = [
   { id: 'information-collect', icon: 'description', title: 'Information We Collect' },
@@ -28,54 +28,31 @@ export default async function PrivacyPolicyPage({
 
   return (
     <main className="flex-grow">
-      {/* Premium Hero Section - Dark theme matching private-transfers */}
-      <section className="relative min-h-[50vh] flex items-center overflow-hidden">
-        {/* Background with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+      {/* Premium Hero Section */}
+      <PageHero
+        image="/privacy-hero.png"
+        title="Privacy Policy"
+        subtitle="We are committed to protecting your personal information and being transparent about how we use it."
+        badge={{ icon: 'lock', text: 'Your Privacy Matters' }}
+      >
+        <p className="text-white/50 text-sm mb-10">
+          Last updated: December 15, 2024
+        </p>
 
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-20 w-96 h-96 bg-[#f7941e]/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-20 w-64 h-64 bg-[#f7941e]/10 rounded-full blur-3xl" />
-
-        <Container className="relative z-10 py-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#f7941e]/20 backdrop-blur-sm rounded-full text-[#f7941e] text-sm font-bold tracking-widest mb-6">
-              <span className="material-icons text-lg">lock</span>
-              YOUR PRIVACY MATTERS
-            </span>
-
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Privacy Policy
-            </h1>
-
-            <p className="text-xl text-white/80 mb-4">
-              We are committed to protecting your personal information and being transparent about how we use it.
-            </p>
-            <p className="text-white/50 text-sm mb-10">
-              Last updated: December 15, 2024
-            </p>
-
-            {/* Quick Jump Links */}
-            <div className="flex flex-wrap justify-center gap-3">
-              {policySections.map((section) => (
-                <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-medium border border-white/10 hover:bg-white/20 transition-all"
-                >
-                  <span className="material-icons text-base">{section.icon}</span>
-                  <span>{section.title}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        </Container>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 animate-bounce">
-          <span className="material-icons text-3xl">keyboard_arrow_down</span>
+        {/* Quick Jump Links */}
+        <div className="flex flex-wrap justify-center gap-3">
+          {policySections.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-medium border border-white/10 hover:bg-white/20 transition-all"
+            >
+              <span className="material-icons text-base">{section.icon}</span>
+              <span>{section.title}</span>
+            </a>
+          ))}
         </div>
-      </section>
+      </PageHero>
 
       {/* Policy Content */}
       <section className="py-16 bg-gray-50">

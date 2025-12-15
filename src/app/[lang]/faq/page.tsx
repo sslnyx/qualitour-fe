@@ -5,7 +5,7 @@ import Image from 'next/image';
 import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import { FAQCategories, FAQQuickLinks } from '@/components/FAQAccordion';
-import HeroBackground from '@/assets/dimitar-donovski-h9Zr7Hq8yaA-unsplash-scaled-e1698877564378.webp';
+import PageHero from '@/components/PageHero';
 
 export const metadata: Metadata = {
     title: 'Frequently Asked Questions | Qualitour',
@@ -23,43 +23,22 @@ export default async function FAQPage({
     return (
         <main className="flex-grow">
             {/* Hero Section */}
-            <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden">
-                {/* Background Image */}
-                <Image
-                    src={HeroBackground}
-                    alt=""
-                    fill
-                    className="object-cover object-bottom"
-                    placeholder="blur"
-                    priority
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
-
-                <Container className="relative z-10 py-20">
-                    <div className="text-center max-w-4xl mx-auto">
-                        {/* Badge */}
-                        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 border border-white/20">
-                            <span className="material-icons text-[#f7941e] text-xl">help_outline</span>
-                            <span className="text-white font-medium tracking-wide">Help Center</span>
-                        </div>
-
-                        {/* Title */}
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-xl">
-                            Frequently Asked{' '}
-                            <span className="text-[#f7941e]">Questions</span>
-                        </h1>
-
-                        {/* Subtitle */}
-                        <p className="text-xl md:text-2xl text-white/90 mb-12 leading-relaxed font-light">
-                            Everything you need to know about your journey with Qualitour.
-                        </p>
-
-                        {/* Quick Jump Links */}
-                        <FAQQuickLinks />
-                    </div>
-                </Container>
-            </section>
+            {/* Hero Section */}
+            <PageHero
+                image="/faq-hero.png"
+                title={
+                    <>
+                        Frequently Asked <span className="text-[#f7941e]">Questions</span>
+                    </>
+                }
+                subtitle="Everything you need to know about your journey with Qualitour."
+                badge={{ icon: 'help_outline', text: 'Help Center' }}
+            >
+                {/* Quick Jump Links */}
+                <div className="mt-8">
+                    <FAQQuickLinks />
+                </div>
+            </PageHero>
 
             {/* FAQ Content */}
             <section className="py-16 md:py-24 bg-gray-50">

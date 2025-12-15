@@ -8,6 +8,7 @@ import { getGoogleReviews } from '@/lib/wordpress/api';
 import TransferReviewsCarousel from '@/components/TransferReviewsCarousel';
 import { wpUrl } from '@/lib/wp-url';
 import VisaInquirySection from '@/components/VisaInquirySection';
+import PageHero from '@/components/PageHero';
 
 const VISA_HERO_BG = wpUrl('/wp-content/uploads/2023/08/nuno-alberto-MykFFC5zolE-unsplash1-scaled.jpg');
 
@@ -181,44 +182,17 @@ export default async function VisaPage({
   return (
     <main className="grow">
       {/* Hero Section */}
-      <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src={VISA_HERO_BG}
-            alt=""
-            fill
-            className="object-cover object-center"
-            priority
-          />
-        </div>
-
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
-
-        <Container className="relative z-10 py-20">
-          <div className="text-center max-w-4xl mx-auto">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-5 py-2.5 mb-8 border border-white/20">
-              <span className="material-icons text-[#f7941e] text-xl">assignment</span>
-              <span className="text-white font-medium tracking-wide">
-                {lang === 'zh' ? '签证服务' : 'Visa Services'}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-xl">
-              {lang === 'zh' ? '中国' : 'China'}{' '}
-              <span className="text-[#f7941e]">{lang === 'zh' ? '签证服务' : 'Visa Services'}</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-xl md:text-2xl text-white/90 leading-relaxed font-light">
-              {subtitle}
-            </p>
-          </div>
-        </Container>
-      </section>
+      <PageHero
+        image={VISA_HERO_BG}
+        title={
+          <>
+            {lang === 'zh' ? '中国' : 'China'}{' '}
+            <span className="text-[#f7941e]">{lang === 'zh' ? '签证服务' : 'Visa Services'}</span>
+          </>
+        }
+        subtitle={subtitle}
+        badge={{ icon: 'assignment', text: lang === 'zh' ? '签证服务' : 'Visa Services' }}
+      />
 
       {/* Value Props Section */}
       <section className="py-16 md:py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50">
