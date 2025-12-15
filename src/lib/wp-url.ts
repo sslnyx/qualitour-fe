@@ -46,6 +46,14 @@ function isMediaPath(path: string): boolean {
 }
 
 /**
+ * Check if a path is a YouTube thumbnail path (simulated by some WP plugins).
+ * Pattern: /vi/{video_id}/{quality}.jpg
+ */
+function isYouTubeThumbnail(path: string): boolean {
+    return path.startsWith('/vi/');
+}
+
+/**
  * Convert a WordPress URL to use R2 CDN for media files.
  * Non-media URLs are passed through unchanged.
  * 
@@ -55,6 +63,10 @@ function isMediaPath(path: string): boolean {
 export function wpUrl(localUrl: string): string {
     // Handle relative paths
     if (localUrl.startsWith('/')) {
+        if (isYouTubeThumbnail(localUrl)) {
+            // Serve directly from YouTube CDN
+            return `https://img.youtube.com${localUrl}`;
+        }
         if (isMediaPath(localUrl)) {
             // Serve media from R2 CDN
             return `${R2_MEDIA_URL}${localUrl}`;
@@ -67,6 +79,11 @@ export function wpUrl(localUrl: string): string {
     try {
         const parsed = new URL(localUrl);
         const path = parsed.pathname + parsed.search + parsed.hash;
+
+        if (isYouTubeThumbnail(path)) {
+            // Serve directly from YouTube CDN
+            return `https://img.youtube.com${path}`;
+        }
 
         if (isMediaPath(path)) {
             // Serve media from R2 CDN
