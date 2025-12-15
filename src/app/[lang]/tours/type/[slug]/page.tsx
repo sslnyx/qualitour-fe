@@ -4,6 +4,7 @@ import { type Locale, i18n } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import type { WPTour } from '@/lib/wordpress/types';
 import { normalizeWpText } from '@/lib/wordpress/text';
+import { wpUrl } from '@/lib/wp-url';
 
 /**
  * Pre-generate tour type pages at build time.
@@ -25,8 +26,8 @@ export async function generateStaticParams() {
   }
 }
 
-const VIKING_HERO_BG = 'http://qualitour.local/wp-content/uploads/2020/10/tour_cover2-scaled.jpg';
-const VIKING_INTRO_IMAGE = 'http://qualitour.local/wp-content/uploads/2023/07/81e60901eb82dcb92a7314843431d657c2be56c3799dbd9f384049e537f7f127-scaled.webp';
+const VIKING_HERO_BG = wpUrl('/wp-content/uploads/2020/10/tour_cover2-scaled.jpg');
+const VIKING_INTRO_IMAGE = wpUrl('/wp-content/uploads/2023/07/81e60901eb82dcb92a7314843431d657c2be56c3799dbd9f384049e537f7f127-scaled.webp');
 
 const VIKING_BULLETS = [
   'Meals & regional specialties',
@@ -215,8 +216,8 @@ export default async function TourTypePage({
                     key={p}
                     href={`${localePrefix}/tours/type/${type}?page=${p}`}
                     className={`px-3 py-2 rounded transition ${p === page
-                        ? 'bg-[#f7941e] text-white'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      ? 'bg-[#f7941e] text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                       }`}
                   >
                     {p}

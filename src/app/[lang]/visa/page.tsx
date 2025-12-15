@@ -5,8 +5,9 @@ import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import { getGoogleReviews } from '@/lib/wordpress/api';
 import TransferReviewsCarousel from '@/components/TransferReviewsCarousel';
+import { wpUrl } from '@/lib/wp-url';
 
-const VISA_HERO_BG = 'http://qualitour.local/wp-content/uploads/2023/08/nuno-alberto-MykFFC5zolE-unsplash1-scaled.jpg';
+const VISA_HERO_BG = wpUrl('/wp-content/uploads/2023/08/nuno-alberto-MykFFC5zolE-unsplash1-scaled.jpg');
 
 export async function generateMetadata({
   params,
@@ -121,54 +122,54 @@ export default async function VisaPage({
   const valueProps =
     lang === 'zh'
       ? [
-          {
-            icon: 'schedule',
-            title: '节省时间',
-            body: '不必花大量时间研究材料与表格，我们会协助您按要求准备。',
-          },
-          {
-            icon: 'support_agent',
-            title: '经验支持',
-            body: '我们熟悉申请流程与常见问题，帮助您更高效地完成递交。',
-          },
-          {
-            icon: 'verified',
-            title: '更高成功率',
-            body: '通过更清晰的材料准备与提交检查，降低遗漏风险。',
-          },
-        ]
+        {
+          icon: 'schedule',
+          title: '节省时间',
+          body: '不必花大量时间研究材料与表格，我们会协助您按要求准备。',
+        },
+        {
+          icon: 'support_agent',
+          title: '经验支持',
+          body: '我们熟悉申请流程与常见问题，帮助您更高效地完成递交。',
+        },
+        {
+          icon: 'verified',
+          title: '更高成功率',
+          body: '通过更清晰的材料准备与提交检查，降低遗漏风险。',
+        },
+      ]
       : [
-          {
-            icon: 'schedule',
-            title: 'Save your time',
-            body: 'Skip the research and focus on your trip. We’ll guide your application step-by-step.',
-          },
-          {
-            icon: 'support_agent',
-            title: 'Leverage our experience',
-            body: 'We know the typical requirements and common pitfalls, helping you prepare correctly.',
-          },
-          {
-            icon: 'verified',
-            title: 'Increase success rate',
-            body: 'A clear checklist and review process reduces errors and missing documents.',
-          },
-        ];
+        {
+          icon: 'schedule',
+          title: 'Save your time',
+          body: 'Skip the research and focus on your trip. We’ll guide your application step-by-step.',
+        },
+        {
+          icon: 'support_agent',
+          title: 'Leverage our experience',
+          body: 'We know the typical requirements and common pitfalls, helping you prepare correctly.',
+        },
+        {
+          icon: 'verified',
+          title: 'Increase success rate',
+          body: 'A clear checklist and review process reduces errors and missing documents.',
+        },
+      ];
 
   const steps =
     lang === 'zh'
       ? [
-          { title: '咨询与签证类型确认', body: '根据出行目的与行程，确认合适的签证类型与时间安排。' },
-          { title: '材料清单与表格指导', body: '提供材料清单并协助填写表格，确保信息一致。' },
-          { title: '递交与进度跟进', body: '协助递交申请并跟进进度，及时提醒补充材料。' },
-          { title: '取证与交付', body: '完成后通知取证/寄送安排。' },
-        ]
+        { title: '咨询与签证类型确认', body: '根据出行目的与行程，确认合适的签证类型与时间安排。' },
+        { title: '材料清单与表格指导', body: '提供材料清单并协助填写表格，确保信息一致。' },
+        { title: '递交与进度跟进', body: '协助递交申请并跟进进度，及时提醒补充材料。' },
+        { title: '取证与交付', body: '完成后通知取证/寄送安排。' },
+      ]
       : [
-          { title: 'Consultation', body: 'Confirm your visa type and timeline based on your trip purpose.' },
-          { title: 'Document checklist', body: 'We provide a checklist and guidance on forms and required documents.' },
-          { title: 'Submission support', body: 'We support the submission process and follow up on progress.' },
-          { title: 'Pickup / delivery', body: 'Once ready, we coordinate pickup or delivery options.' },
-        ];
+        { title: 'Consultation', body: 'Confirm your visa type and timeline based on your trip purpose.' },
+        { title: 'Document checklist', body: 'We provide a checklist and guidance on forms and required documents.' },
+        { title: 'Submission support', body: 'We support the submission process and follow up on progress.' },
+        { title: 'Pickup / delivery', body: 'Once ready, we coordinate pickup or delivery options.' },
+      ];
 
   const requirements =
     lang === 'zh'

@@ -5,6 +5,7 @@ import type { Locale } from '@/i18n/config';
 import { getLocalePrefix } from '@/i18n/config';
 import TransferBookingModalButton from '@/components/TransferBookingModalButton';
 import FeaturedGoogleReview from '@/components/FeaturedGoogleReview';
+import { wpUrl } from '@/lib/wp-url';
 
 type TransferOffer = {
   titleLines: string[];
@@ -34,15 +35,15 @@ type CharterRate = {
 
 const FLEET_ITEMS: FleetItem[] = [
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2020/12/2-Sienna-300x207.png',
+    imageUrl: wpUrl('/wp-content/uploads/2020/12/2-Sienna-300x207.png'),
     label: 'Mini-van (4-seater)',
   },
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2020/10/transfer-standard-van-1-300x200.jpg',
+    imageUrl: wpUrl('/wp-content/uploads/2020/10/transfer-standard-van-1-300x200.jpg'),
     label: 'Standard Van (11-seater)',
   },
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2020/10/transfer-deluxe-van-1-300x200.jpg',
+    imageUrl: wpUrl('/wp-content/uploads/2020/10/transfer-deluxe-van-1-300x200.jpg'),
     label: 'Deluxe Van (14-seater)',
   },
 ];
@@ -125,21 +126,21 @@ const TRANSFER_SECTIONS: TransferSection[] = [
 
 const CHARTER_RATES: CharterRate[] = [
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2020/12/2-Van.png',
+    imageUrl: wpUrl('/wp-content/uploads/2020/12/2-Van.png'),
     title: 'Mercedes Sprinter Van (Standard)',
     priceNumber: '95',
     priceUnit: '/ Hr',
     bullets: ['Up to 11 passengers with luggage', 'Min. 2.5 hours', 'Within Greater Vancouver only'],
   },
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2020/12/3-Deluxe-Van.png',
+    imageUrl: wpUrl('/wp-content/uploads/2020/12/3-Deluxe-Van.png'),
     title: 'Mercedes Sprinter Van (Deluxe)',
     priceNumber: '110',
     priceUnit: '/ Hr',
     bullets: ['Up to 14 passengers with luggage', 'Min. 2.5 hours', 'Within Greater Vancouver only'],
   },
   {
-    imageUrl: 'http://qualitour.local/wp-content/uploads/2024/10/Weixin-Image_20240924131059.jpg',
+    imageUrl: wpUrl('/wp-content/uploads/2024/10/Weixin-Image_20240924131059.jpg'),
     title: 'Mercedes Sprinter Van (Deluxe)',
     priceNumber: '110',
     priceUnit: '/ Hr',
@@ -196,17 +197,17 @@ export default async function PrivateTransfersPage({
   const highlights =
     lang === 'zh'
       ? [
-          '覆盖大温哥华及周边地区',
-          '机场 / 邮轮码头 / 滑雪度假村接送',
-          '适合家庭与小团体出行',
-          '可按行程定制（接送/包车）',
-        ]
+        '覆盖大温哥华及周边地区',
+        '机场 / 邮轮码头 / 滑雪度假村接送',
+        '适合家庭与小团体出行',
+        '可按行程定制（接送/包车）',
+      ]
       : [
-          'Serving Greater Vancouver and the Lower Mainland',
-          'Airport, cruise terminal, and ski resort transfers',
-          'Ideal for families and small private groups',
-          'Custom quotes for transfers and charter services',
-        ];
+        'Serving Greater Vancouver and the Lower Mainland',
+        'Airport, cruise terminal, and ski resort transfers',
+        'Ideal for families and small private groups',
+        'Custom quotes for transfers and charter services',
+      ];
 
   return (
     <main className="grow">
