@@ -5,7 +5,7 @@ import "./globals.css";
 // Self-hosted icon fonts (eliminates external CDN requests, includes font-display: swap)
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "@fontsource/material-icons";
-import "@fontsource/material-symbols-outlined";
+import "material-symbols/outlined.css";
 import "eleganticons/css/style.css";
 
 const poppins = Poppins({

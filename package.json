@@ -21,6 +21,7 @@
     "eleganticons": "^0.0.1",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "material-symbols": "^0.40.2",
     "next": "16.0.10",
     "react": "19.2.0",
     "react-dom": "19.2.0",
